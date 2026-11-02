@@ -1,0 +1,1174 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Tête de gondole de soins de beauté en 3D, à explorer sous tous les angles.">
+<style>*,*::before,*::after{box-sizing:border-box}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font-size:14px}[hidden]{display:none!important}</style>
+<title>Gondole Ondée</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Italiana&family=Jost:wght@300;400;500;600&display=swap">
+<style>
+/* Plein cadre : la scène 3D occupe tout, l'interface flotte aux bords comme une signalétique de magasin. */
+:root {
+  --ink: #f3f1ea;
+  --ink-soft: #c9d3cd;
+  --petrol: #0f2a2b;
+  --glass: rgba(14, 34, 35, .62);
+  --glass-line: rgba(233, 240, 234, .18);
+  --brass: #d9b98a;
+  --display: "Italiana", "Didot", "Bodoni 72", Georgia, serif;
+  --body: "Jost", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; overflow: hidden; }
+body {
+  background: var(--petrol); color: var(--ink); font-family: var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  -webkit-font-smoothing: antialiased;
+}
+#scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; outline: none; }
+#scene.drag { cursor: grabbing; }
+.chip { background: var(--glass); border: 1px solid var(--glass-line); -webkit-backdrop-filter: blur(14px) saturate(1.2); backdrop-filter: blur(14px) saturate(1.2); }
+#head {
+  position: fixed; z-index: 2; pointer-events: none;
+  top: calc(16px + env(safe-area-inset-top, 0px));
+  left: max(16px, env(safe-area-inset-left, 0px));
+  padding: 10px 14px 11px; border-radius: 3px; display: grid; gap: 1px; max-width: calc(100vw - 32px);
+}
+#head h1 { font: 400 22px/1.1 var(--display); letter-spacing: .04em; margin: 0; text-wrap: balance; }
+#head p { font: 400 12px/1.35 var(--body); color: var(--ink-soft); margin: 0; }
+#dock {
+  position: fixed; z-index: 2; left: 0; right: 0;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none;
+}
+#hint { font-size: 12.5px; line-height: 1.35; color: var(--ink); text-align: center; padding: 6px 12px; border-radius: 3px; transition: opacity .5s; max-width: 100%; }
+#hint.off { opacity: 0; }
+#bar { pointer-events: auto; display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; padding: 4px; border-radius: 4px; max-width: 100%; }
+#bar button {
+  font: 500 13px/1 var(--body); letter-spacing: .02em; color: var(--ink); background: transparent; border: 0; border-radius: 2px;
+  padding: 10px 13px; min-height: 36px; cursor: pointer; transition: background .15s, color .15s;
+}
+#bar button:hover { background: rgba(233, 240, 234, .13); }
+#bar button[aria-pressed="true"] { background: var(--brass); color: #1b1712; }
+#bar button:focus-visible, #scene:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+#bar .sep { width: 1px; background: var(--glass-line); margin: 5px 4px; }
+#meter { position: fixed; z-index: 2; left: 0; bottom: 0; height: 2px; width: 100%; background: var(--brass); transform-origin: 0 50%; transform: scaleX(0); transition: opacity .6s; opacity: .9; }
+#meter.done { opacity: 0; }
+#load { position: fixed; inset: 0; z-index: 3; display: grid; place-items: center; background: var(--petrol); text-align: center; padding: 24px; transition: opacity .7s; }
+#load.off { opacity: 0; pointer-events: none; }
+#load b { display: block; font: 400 44px/1 var(--display); letter-spacing: .12em; margin-bottom: 10px; }
+#load span { font-size: 14px; color: var(--ink-soft); line-height: 1.45; display: block; max-width: 46ch; }
+@media (max-width: 560px) { #bar button { padding: 9px 9px; font-size: 12.5px; } #head h1 { font-size: 19px; } #bar .sep { display: none; } }
+@media (prefers-reduced-motion: reduce) { #hint, #load, #meter { transition: none; } }
+</style>
+</head>
+<body>
+<canvas id="scene" tabindex="0" aria-label="Scène 3D d'une tête de gondole de soins de beauté. Glissez pour tourner autour, les flèches du clavier fonctionnent aussi."></canvas>
+<header id="head" class="chip">
+  <h1>Tête de gondole Ondée</h1>
+  <p>Soins de beauté. Marque et prix fictifs.</p>
+</header>
+<div id="dock">
+  <div id="hint" class="chip">Glissez pour tourner. Molette ou pincement pour zoomer. Double-clic pour vous approcher d'un rayon.</div>
+  <nav id="bar" class="chip" aria-label="Points de vue">
+    <button id="v-tq" type="button" data-view="tq" aria-pressed="true">Trois-quarts</button>
+    <button id="v-face" type="button" data-view="face" aria-pressed="false">Face</button>
+    <button id="v-rayon" type="button" data-view="rayon" aria-pressed="false">Rayon</button>
+    <button id="v-cote" type="button" data-view="cote" aria-pressed="false">Côté</button>
+    <button id="v-dos" type="button" data-view="dos" aria-pressed="false">Dos</button>
+    <span class="sep" aria-hidden="true"></span>
+    <button id="v-tour" type="button" aria-pressed="false">Visite auto</button>
+  </nav>
+</div>
+<div id="meter" aria-hidden="true"></div>
+<div id="load"><div><b>ONDÉE</b><span id="load-msg">Mise en rayon des produits…</span></div></div>
+
+<script>
+"use strict";
+(function () {
+/* ===== Maths ===== */
+const m4 = {
+  id: () => new Float32Array([1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]),
+  mul(a, b) { const o = new Float32Array(16); for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) o[c*4+r] = a[r]*b[c*4]+a[r+4]*b[c*4+1]+a[r+8]*b[c*4+2]+a[r+12]*b[c*4+3]; return o; },
+  trs(x, y, z, ry = 0, s = 1) { const c = Math.cos(ry)*s, n = Math.sin(ry)*s; return new Float32Array([c,0,-n,0, 0,s,0,0, n,0,c,0, x,y,z,1]); },
+  look(e, t, u) {
+    let zx=e[0]-t[0], zy=e[1]-t[1], zz=e[2]-t[2], l=Math.hypot(zx,zy,zz); zx/=l;zy/=l;zz/=l;
+    let xx=u[1]*zz-u[2]*zy, xy=u[2]*zx-u[0]*zz, xz=u[0]*zy-u[1]*zx; l=Math.hypot(xx,xy,xz); xx/=l;xy/=l;xz/=l;
+    const yx=zy*xz-zz*xy, yy=zz*xx-zx*xz, yz=zx*xy-zy*xx;
+    return new Float32Array([xx,yx,zx,0, xy,yy,zy,0, xz,yz,zz,0, -(xx*e[0]+xy*e[1]+xz*e[2]), -(yx*e[0]+yy*e[1]+yz*e[2]), -(zx*e[0]+zy*e[1]+zz*e[2]), 1]);
+  },
+  frustum(l, r, b, t, n, f) { return new Float32Array([2*n/(r-l),0,0,0, 0,2*n/(t-b),0,0, (r+l)/(r-l),(t+b)/(t-b),-(f+n)/(f-n),-1, 0,0,-2*f*n/(f-n),0]); },
+  ortho(l, r, b, t, n, f) { return new Float32Array([2/(r-l),0,0,0, 0,2/(t-b),0,0, 0,0,-2/(f-n),0, -(r+l)/(r-l),-(t+b)/(t-b),-(f+n)/(f-n),1]); },
+  persp(fov, a, n, f) { const t = n*Math.tan(fov/2); return m4.frustum(-t*a, t*a, -t, t, n, f); }
+};
+const hex = h => { const f = v => { v/=255; return v<=.04045 ? v/12.92 : Math.pow((v+.055)/1.055, 2.4); }; return [f(h>>16&255), f(h>>8&255), f(h&255)]; };
+let seed = 20261102; const rnd = () => (seed = (seed*1664525+1013904223)>>>0) / 4294967296;
+const halton = (i, b) => { let f=1, r=0; while (i>0) { f/=b; r+=f*(i%b); i=Math.floor(i/b); } return r; };
+
+/* ===== WebGL ===== */
+const canvas = document.getElementById("scene");
+const fail = msg => { document.getElementById("load-msg").textContent = msg; };
+const gl = canvas.getContext("webgl2", { antialias: false, alpha: false, depth: false, powerPreference: "high-performance", preserveDrawingBuffer: false });
+if (!gl) { fail("Votre navigateur n'a pas accès à WebGL 2. Activez l'accélération matérielle ou ouvrez cette page dans Chrome, Edge, Safari ou Firefox à jour."); return; }
+const hasFloat = !!gl.getExtension("EXT_color_buffer_float");
+gl.getExtension("OES_texture_float_linear");
+const aniso = gl.getExtension("EXT_texture_filter_anisotropic");
+const maxAniso = aniso ? gl.getParameter(aniso.MAX_TEXTURE_MAX_ANISOTROPY_EXT) : 1;
+const HDR = hasFloat ? { i: gl.RGBA16F, f: gl.RGBA, t: gl.HALF_FLOAT } : { i: gl.RGBA8, f: gl.RGBA, t: gl.UNSIGNED_BYTE };
+
+function program(vs, fs) {
+  const mk = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, "#version 300 es\nprecision highp float;precision highp int;precision highp sampler2DArrayShadow;\n"+src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
+  const p = gl.createProgram(); gl.attachShader(p, mk(gl.VERTEX_SHADER, vs)); gl.attachShader(p, mk(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  const u = {}, n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+  for (let i = 0; i < n; i++) { const a = gl.getActiveUniform(p, i), name = a.name.replace("[0]", ""); u[name] = gl.getUniformLocation(p, a.name); }
+  return { p, u };
+}
+
+const VS_MAIN = `
+layout(location=0) in vec3 aP; layout(location=1) in vec3 aN; layout(location=2) in vec2 aUV; layout(location=3) in mat4 aM;
+uniform mat4 uVP; out vec3 vW; out vec3 vN; out vec2 vUV;
+void main(){ vec4 w=aM*vec4(aP,1.); vW=w.xyz; vN=mat3(aM)*aN; vUV=aUV; gl_Position=uVP*w; }`;
+
+const FS_MAIN = `
+in vec3 vW; in vec3 vN; in vec2 vUV; layout(location=0) out vec4 O;
+uniform vec3 uEye, uBase, uEm; uniform float uRough, uMetal, uCoat, uFrost; uniform int uKind; uniform bool uHasMap, uEmMap, uMirrorPass;
+uniform vec3 uAbsorb; uniform float uTime; uniform vec2 uRes, uJit; uniform float uMicro, uFlute;
+uniform sampler2D uMap, uCopy, uMirror; uniform sampler2DArrayShadow uSh;
+uniform mat4 uSM[4]; uniform vec4 uLP[4]; uniform vec3 uLC[4], uLD[4]; uniform float uFrameN;
+const float PI=3.14159265;
+const float GW=.625, GL=1.5, GTOP=1.84;
+const vec3 ROOM=vec3(9.,3.6,9.);
+float ign(vec2 p){ return fract(52.9829189*fract(dot(p,vec2(.06711056,.00583715)))); }
+float hash(vec2 p){ return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453); }
+
+/* Reflet analytique du magasin avec correction de parallaxe : plafond à rails lumineux, murs de rayons, sol. */
+vec3 storeEnv(vec3 p, vec3 R, float rough){
+  vec3 lo=vec3(-ROOM.x,0.,-ROOM.z), hi=ROOM;
+  vec3 tt=(mix(lo,hi,step(0.,R))-p)/(abs(R)+1e-4)*sign(R+1e-5);
+  tt=abs(tt); float t=min(tt.x,min(tt.y,tt.z));
+  vec3 h=p+R*t;
+  float blur=.02+rough*rough*t*1.1;
+  vec3 c;
+  if(t==tt.y && R.y>0.){
+    float dx=abs(mod(h.x+1.3,2.6)-1.3), dz=abs(mod(h.z+1.2,2.4)-1.2);
+    float wx=.2, wz=.92;
+    float px=smoothstep(wx+blur,wx-blur*.5-.001,dx)*wx/(wx+blur*.8);
+    float pz=smoothstep(wz+blur,wz-blur*.5-.001,dz)*wz/(wz+blur*.5);
+    c=mix(vec3(.46,.45,.43), vec3(15.,14.2,13.), px*pz);
+  } else if(t==tt.y){
+    c=vec3(.46,.44,.41)*(.5+.5*smoothstep(0.,6.,length(h.xz)));
+  } else {
+    float band=.5+.5*cos((h.y-.2)*22.4);
+    float shelf=smoothstep(.2,.3,h.y)*smoothstep(2.25,2.1,h.y);
+    vec3 facing=mix(vec3(.13,.17,.17), vec3(.72,.66,.58), band*band);
+    vec3 wall=vec3(.42,.42,.39);
+    c=mix(wall, mix(facing,vec3(.32),clamp(rough*1.6,0.,1.)), shelf);
+    c+=vec3(1.5,1.35,1.15)*smoothstep(.3,.0,abs(h.y-2.9)-blur)*.35;
+  }
+  return c;
+}
+float D_GGX(float a,float NoH){ float a2=a*a; float d=NoH*NoH*(a2-1.)+1.; return a2/(PI*d*d+1e-6); }
+float V_Sm(float a,float NoV,float NoL){ return .5/(NoL*(NoV*(1.-a)+a)+NoV*(NoL*(1.-a)+a)+1e-5); }
+vec3 F_S(vec3 F0,float x){ float f=pow(1.-x,5.); return F0+(1.-F0)*f; }
+vec3 envBRDF(vec3 F0,float r,float NoV){ vec4 c0=vec4(-1.,-.0275,-.572,.022),c1=vec4(1.,.0425,1.04,-.04); vec4 q=r*c0+c1; float a=min(q.x*q.x,pow(2.,-9.28*NoV))*q.x+q.y; vec2 ab=vec2(-1.04,1.04)*a+q.zw; return F0*ab.x+ab.y; }
+vec3 lobe(vec3 N,vec3 V,vec3 L,vec3 rad,vec3 dif,vec3 F0,float r,float coat){
+  float NoL=clamp(dot(N,L),0.,1.); if(NoL<=0.) return vec3(0.);
+  vec3 H=normalize(V+L); float NoV=max(dot(N,V),.02),NoH=clamp(dot(N,H),0.,1.),VoH=clamp(dot(V,H),0.,1.);
+  float a=max(r*r,.0025);
+  vec3 col=dif/PI*(1.-F_S(F0,VoH))+D_GGX(a,NoH)*V_Sm(a,NoV,NoL)*F_S(F0,VoH);
+  if(coat>0.){ float fc=coat*(.04+.96*pow(1.-VoH,5.)); col=col*(1.-fc)+vec3(D_GGX(.006,NoH)*V_Sm(.006,NoV,NoL)*fc); }
+  return col*rad*NoL;
+}
+float shadowAt(int i,vec3 w,vec3 Ng){
+  vec4 c=uSM[i]*vec4(w+Ng*.0035,1.); vec3 q=c.xyz/c.w*.5+.5;
+  if(q.x<0.||q.x>1.||q.y<0.||q.y>1.||q.z>1.) return 1.;
+  float a=ign(gl_FragCoord.xy+uFrameN*5.3)*6.2832, s=0.; float rad=(i<2?1.6:2.6)/2048.;
+  for(int k=0;k<4;k++){ float t=(float(k)+.5)/4.; float ang=a+float(k)*2.39996; vec2 o=vec2(cos(ang),sin(ang))*sqrt(t)*rad;
+    s+=texture(uSh,vec4(q.xy+o,float(i),q.z-.00035)); }
+  return s*.25;
+}
+void main(){
+  vec3 V=normalize(uEye-vW); vec3 Ng=normalize(vN); if(dot(Ng,V)<0.&&uKind!=1) Ng=-Ng;
+  vec3 N=Ng;
+  if(uFlute>0.){ float s=vUV.x*uFlute*6.2832; N=normalize(N+ (abs(N.z)>abs(N.x)?vec3(1,0,0):vec3(0,0,1))*sin(s)*.55); }
+  float rough=uRough; vec3 base=uBase; vec4 tx=vec4(1.);
+  if(uHasMap&&!uEmMap){ tx=texture(uMap,vUV); base*=tx.rgb; }
+  if(uMicro>0.){ vec3 q=vW*vec3(900.); N=normalize(N+uMicro*(vec3(hash(q.xy),hash(q.yz),hash(q.zx))-.5)); }
+  vec3 em=uEm; if(uEmMap) em*=texture(uMap,vUV).rgb;
+  /* Sol poli : dalles, joints, poussière de marbre */
+  float grooveMask=1.;
+  if(uKind==2){
+    vec2 g=abs(fract(vW.xz/1.2+.5)-.5)*1.2; float gd=min(g.x,g.y); grooveMask=smoothstep(.0012,.0034,gd);
+    base*=mix(.42,1.,grooveMask);
+    vec2 tid=floor(vW.xz/1.2+.5); base*=.96+.08*hash(tid);
+    rough=mix(.5,.17+.12*tx.a*0.,grooveMask);
+    N=normalize(N+vec3(texture(uMap,vW.xz*.31+.3).r-.5,0.,texture(uMap,vW.zx*.27).r-.5)*.012);
+  }
+  vec3 dif=base*(1.-uMetal); vec3 F0=mix(vec3(.04),base,uMetal);
+  float NoV=max(dot(N,V),.02); vec3 R=reflect(-V,N);
+  /* Cavité de rayonnage : LED linéaires et occlusion analytique */
+  vec2 a=abs(vW.xz); float inside=step(a.x,GW+.006)*step(a.y,GL+.006)*step(vW.y,GTOP-.002)*step(.13,vW.y);
+  vec3 Lo=vec3(0.),out_=vec3(0.),sp=vec3(0.);
+  float k=ceil((vW.y+.001-.16)/.28); float sy=.16+.28*k-.033;
+  if(a.y>1.1){ out_=vec3(0.,0.,sign(vW.z)); sp=vec3(clamp(vW.x,-GW+.03,GW-.03),sy,sign(vW.z)*(GL+.018)); }
+  else { out_=vec3(sign(vW.x),0.,0.); sp=vec3(sign(vW.x)*(GW+.018),sy,clamp(vW.z,-1.08,1.08)); }
+  if(inside>.5){
+    vec3 Lv=sp-vW; float d=length(Lv); vec3 L=Lv/max(d,1e-4);
+    float E=.5/(d+.055)*smoothstep(.015,.075,d);
+    vec3 led=vec3(1.,.9,.76)*E;
+    float wrap=clamp(dot(N,L)*.82+.18,0.,1.);
+    Lo+=dif/PI*led*wrap*PI*.62;
+    Lo+=lobe(N,V,L,led*.55,vec3(0.),F0,max(rough,.28),0.);
+  }
+  /* Lumières à ombre : deux projecteurs sur rail, deux échantillons de la lumière diffuse du plafond */
+  for(int i=0;i<4;i++){
+    vec3 L; vec3 rad=uLC[i];
+    if(uLP[i].w>.5){ vec3 Lv=uLP[i].xyz-vW; float d2=dot(Lv,Lv); L=Lv/sqrt(d2); float cs=dot(-L,uLD[i]); rad*=smoothstep(.7,.9,cs)/d2; }
+    else L=uLP[i].xyz;
+    if(dot(rad,rad)<1e-7||dot(Ng,L)<=-.05) continue;
+    float s=shadowAt(i,vW,Ng); if(s<=0.) continue;
+    Lo+=lobe(N,V,L,rad*s,dif,F0,rough,uCoat);
+  }
+  /* Ambiance et reflets */
+  float cav=inside>.5?.34:1.;
+  float up=N.y*.5+.5;
+  vec3 amb=mix(vec3(.15,.14,.13),vec3(.46,.45,.43),up)*cav;
+  /* Assombrissement doux près du sol */
+  amb*=mix(.72,1.,smoothstep(0.,.5,vW.y));
+  Lo+=dif*amb;
+  vec3 spec=storeEnv(vW,R,rough);
+  if(inside>.5){
+    /* Un reflet qui part vers le fond ou la tablette du dessus ne voit pas le plafond */
+    float inward=smoothstep(.22,-.18,dot(R,out_));
+    spec=mix(spec,vec3(.05,.07,.07)+dif*.3,inward);
+    float upb=smoothstep(.05,.5,R.y);
+    spec=mix(spec,mix(vec3(.11,.09,.07),vec3(1.1,.98,.82),smoothstep(.2,.9,dot(R,out_))),upb*.9);
+  }
+  float kSpec=1.;
+  if(uKind==2) kSpec=0.;
+  Lo+=spec*envBRDF(F0,rough,NoV)*kSpec;
+  if(uCoat>0.){ float fc=uCoat*(.04+.96*pow(1.-NoV,5.)); vec3 s2=storeEnv(vW,reflect(-V,Ng),.06); if(inside>.5){ float inw=smoothstep(.22,-.18,dot(R,out_)); s2=mix(s2,vec3(.05),inw); s2=mix(s2,vec3(.3,.26,.22),smoothstep(.05,.5,R.y)*.9); } Lo=Lo*(1.-fc)+s2*fc; }
+
+  vec3 col=Lo+em;
+
+  if(uKind==2){
+    vec2 suv=gl_FragCoord.xy/uRes; if(uMirrorPass){ O=vec4(col,0.); return; }
+    float hA=textureLod(uMirror,suv,3.).a;
+    float lod=1.2+hA*7.;
+    vec2 off=(N.xz-Ng.xz)*.06+uJit*(.002+hA*.05);
+    vec3 refl=textureLod(uMirror,suv+off,lod).rgb;
+    float F=(.085+.8*pow(1.-max(dot(Ng,V),0.),3.6))*grooveMask;
+    col=mix(col,refl,F);
+  }
+  if(uKind==1){
+    /* Verre : réfraction écran, absorption selon l'épaisseur traversée, reflet de Fresnel */
+    float F=.04+.96*pow(1.-NoV,5.);
+    float path=1./max(NoV,.16);
+    vec3 tint=exp(-uAbsorb*path);
+    vec3 refr;
+    if(uMirrorPass){ refr=exp(-uAbsorb)*vec3(.35,.34,.32); }
+    else {
+      vec2 suv=gl_FragCoord.xy/uRes; float dist=length(uEye-vW);
+      vec3 vn=N-V*dot(N,V);
+      vec3 rx=normalize(cross(vec3(0,1,0),V)), ry=cross(V,rx);
+      vec2 o=vec2(dot(vn,rx),dot(vn,ry))*.018/max(dist,.25);
+      if(uFrost>0.){
+        vec3 acc=vec3(0.); float ra=ign(gl_FragCoord.xy+uFrameN*3.1)*6.28;
+        for(int i=0;i<6;i++){ float t=(float(i)+.5)/6.; float an=ra+float(i)*2.4; acc+=texture(uCopy,suv+o+vec2(cos(an),sin(an))*sqrt(t)*uFrost/max(dist,.25)).rgb; }
+        refr=acc/6.;
+      } else refr=texture(uCopy,suv+o).rgb;
+    }
+    vec3 s=storeEnv(vW,R,rough);
+    if(inside>.5){ float inw=smoothstep(.22,-.18,dot(R,out_)); s=mix(s,vec3(.04,.05,.05),inw); s=mix(s,mix(vec3(.08),vec3(1.2,1.05,.9),smoothstep(.2,.9,dot(R,out_))),smoothstep(.05,.5,R.y)*.9); }
+    vec3 sum=refr*tint*(1.-F)+s*F+base*uFrost*1.5*amb;
+    for(int i=0;i<4;i++){ vec3 L; vec3 rad=uLC[i]; if(uLP[i].w>.5){ vec3 Lv=uLP[i].xyz-vW; float d2=dot(Lv,Lv); L=Lv/sqrt(d2); rad*=smoothstep(.7,.9,dot(-L,uLD[i]))/d2; } else L=uLP[i].xyz; sum+=lobe(N,V,L,rad,vec3(0.),vec3(.04),rough,0.); }
+    col=sum+em;
+  }
+  float a_=uMirrorPass?clamp(vW.y/2.4,0.,1.):1.;
+  O=vec4(col,a_);
+}`;
+const VS_SHADOW = `layout(location=0) in vec3 aP; layout(location=3) in mat4 aM; uniform mat4 uVP; void main(){ gl_Position=uVP*aM*vec4(aP,1.); }`;
+const FS_SHADOW = `void main(){}`;
+const VS_FS = `out vec2 v; void main(){ vec2 p=vec2((gl_VertexID<<1)&2,gl_VertexID&2); v=p; gl_Position=vec4(p*2.-1.,0.,1.); }`;
+const FS_ACC = `in vec2 v; out vec4 O; uniform sampler2D uA,uB; uniform float uK; void main(){ O=mix(texture(uA,v),texture(uB,v),uK); }`;
+const FS_DOWN = `in vec2 v; out vec4 O; uniform sampler2D uT; uniform vec2 uPx; uniform float uTh;
+void main(){ vec3 c=vec3(0.); for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){ vec3 s=texture(uT,v+vec2(x,y)*uPx).rgb; float l=max(s.r,max(s.g,s.b)); c+=s*smoothstep(uTh,uTh+1.5,l); } O=vec4(min(c/9.,vec3(30.)),1.); }`;
+const FS_BLUR = `in vec2 v; out vec4 O; uniform sampler2D uT; uniform vec2 uD; void main(){ vec3 c=texture(uT,v).rgb*.227; c+=(texture(uT,v+uD*1.385).rgb+texture(uT,v-uD*1.385).rgb)*.316; c+=(texture(uT,v+uD*3.231).rgb+texture(uT,v-uD*3.231).rgb)*.07; O=vec4(c,1.); }`;
+const FS_POST = `in vec2 v; out vec4 O; uniform sampler2D uT,uB1,uB2; uniform float uExp;
+vec3 aces(vec3 x){ x=mat3(.59719,.076,.0284,.35458,.90834,.13383,.04823,.01566,.83777)*x; vec3 a=x*(x+.0245786)-.000090537; vec3 b=x*(.983729*x+.432951)+.238081; x=a/b; return mat3(1.60475,-.10208,-.00327,-.53108,1.10813,-.07276,-.07367,-.00605,1.07602)*x; }
+float dith(vec2 p){ return fract(52.9829189*fract(dot(p,vec2(.06711056,.00583715))))-.5; }
+void main(){ vec3 c=texture(uT,v).rgb; c+=texture(uB1,v).rgb*.09+texture(uB2,v).rgb*.11;
+  vec2 q=v-.5; c*=1.-dot(q,q)*.42; c=aces(c*uExp); c=clamp(c,0.,1.);
+  c=mix(c*12.92,1.055*pow(c,vec3(1./2.4))-.055,step(.0031308,c)); O=vec4(c+dith(gl_FragCoord.xy)/255.,1.); }`;
+
+let P, PS, PA, PD, PB, PP;
+try {
+  P = program(VS_MAIN, FS_MAIN); PS = program(VS_SHADOW, FS_SHADOW);
+  PA = program(VS_FS, FS_ACC); PD = program(VS_FS, FS_DOWN); PB = program(VS_FS, FS_BLUR); PP = program(VS_FS, FS_POST);
+} catch (e) { console.error(e); fail("Le rendu 3D n'a pas pu démarrer sur cette carte graphique. Essayez un autre navigateur."); window.__gondole = { error: String(e) }; return; }
+const emptyVAO = gl.createVertexArray();
+
+/* ===== Géométries ===== */
+function geo(p, n, uv, idx) {
+  const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
+  const b = (loc, data, size) => { const v = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, v); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0); };
+  b(0, p, 3); b(1, n, 3); b(2, uv, 2);
+  const e = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, e); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(idx), gl.STATIC_DRAW);
+  gl.bindVertexArray(null);
+  return { vao, count: idx.length, isGeo: true };
+}
+/* Profil de révolution : [r, y, congé]. Les angles sont arrondis pour attraper la lumière. */
+function profile(pts) {
+  const out = [];
+  pts.forEach((q, i) => {
+    const f = q[2] === undefined ? .0006 : q[2];
+    if (i === 0 || i === pts.length-1 || f === 0) { out.push([q[0], q[1]]); return; }
+    const a = pts[i-1], b = pts[i+1];
+    const la = Math.hypot(a[0]-q[0], a[1]-q[1]), lb = Math.hypot(b[0]-q[0], b[1]-q[1]);
+    const ff = Math.min(f, la*.48, lb*.48);
+    const p0 = [q[0]+(a[0]-q[0])/la*ff, q[1]+(a[1]-q[1])/la*ff], p2 = [q[0]+(b[0]-q[0])/lb*ff, q[1]+(b[1]-q[1])/lb*ff];
+    for (let s = 0; s <= 4; s++) { const t = s/4, u = 1-t; out.push([u*u*p0[0]+2*u*t*q[0]+t*t*p2[0], u*u*p0[1]+2*u*t*q[1]+t*t*p2[1]]); }
+  });
+  return out;
+}
+function lathe(pts, seg = 32) {
+  const pr = profile(pts), P_ = [], N = [], U = [], I = [];
+  let y0 = 1e9, y1 = -1e9; pr.forEach(q => { y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); });
+  const n = pr.length;
+  const tan = i => { const a = pr[Math.max(i-1,0)], b = pr[Math.min(i+1,n-1)]; const d = [b[0]-a[0], b[1]-a[1]], l = Math.hypot(d[0],d[1])||1; return [d[0]/l,d[1]/l]; };
+  for (let i = 0; i < n; i++) {
+    const t = tan(i), nr = t[1], ny = -t[0];
+    for (let j = 0; j <= seg; j++) {
+      const f = -Math.PI + j/seg*Math.PI*2, s = Math.sin(f), c = Math.cos(f);
+      P_.push(pr[i][0]*s, pr[i][1], pr[i][0]*c); N.push(nr*s, ny, nr*c); U.push(j/seg, (pr[i][1]-y0)/(y1-y0||1));
+    }
+  }
+  for (let i = 0; i < n-1; i++) for (let j = 0; j < seg; j++) { const a = i*(seg+1)+j, b = a+1, c = a+seg+1, d = c+1; I.push(a,b,d, a,d,c); }
+  return geo(P_, N, U, I);
+}
+function arc(r, y0, y1, ang, seg = 22) {
+  const P_ = [], N = [], U = [], I = [];
+  for (let i = 0; i < 2; i++) for (let j = 0; j <= seg; j++) { const f = -ang/2 + j/seg*ang, s = Math.sin(f), c = Math.cos(f); P_.push(r*s, i?y1:y0, r*c); N.push(s,0,c); U.push(j/seg, i); }
+  for (let j = 0; j < seg; j++) { const a = j, b = j+1, c = j+seg+1, d = c+1; I.push(a,b,d, a,d,c); }
+  return geo(P_, N, U, I);
+}
+/* Boîte aux arêtes arrondies. mode : atlas (étui, face + tranche), front (face seule), world (grain en mètres) */
+function rbox(w, h, d, r = .002, mode = "atlas", uvs = 1) {
+  const hx = w/2, hy = h/2, hz = d/2, ns = 2, P_ = [], N = [], U = [], I = [];
+  const ticks = H => { const a = [-H]; for (let i = 1; i <= ns; i++) a.push(-H+r*i/ns); for (let i = 0; i < ns; i++) a.push(H-r+r*i/ns); a.push(H); return a; };
+  const faces = [ [[1,0,0],[0,1,0],[0,0,1],0], [[-1,0,0],[0,1,0],[0,0,-1],1], [[0,0,-1],[0,1,0],[1,0,0],2], [[0,0,1],[0,1,0],[-1,0,0],3], [[1,0,0],[0,0,-1],[0,1,0],4], [[1,0,0],[0,0,1],[0,-1,0],5] ];
+  const H = [hx,hy,hz];
+  for (const [u, v, nn, id] of faces) {
+    const Hu = Math.abs(u[0])*hx+Math.abs(u[1])*hy+Math.abs(u[2])*hz, Hv = Math.abs(v[0])*hx+Math.abs(v[1])*hy+Math.abs(v[2])*hz, Hn = Math.abs(nn[0])*hx+Math.abs(nn[1])*hy+Math.abs(nn[2])*hz;
+    const tu = ticks(Hu), tv = ticks(Hv), base = P_.length/3;
+    tv.forEach(b => tu.forEach(a => {
+      const q = [u[0]*a+v[0]*b+nn[0]*Hn, u[1]*a+v[1]*b+nn[1]*Hn, u[2]*a+v[2]*b+nn[2]*Hn];
+      const inn = q.map((x, i) => Math.max(-H[i]+r, Math.min(H[i]-r, x)));
+      let dd = q.map((x, i) => x-inn[i]); const l = Math.hypot(dd[0],dd[1],dd[2])||1; dd = dd.map(x => x/l);
+      P_.push(inn[0]+dd[0]*r, inn[1]+dd[1]*r, inn[2]+dd[2]*r); N.push(dd[0],dd[1],dd[2]);
+      const su = a/Hu*.5+.5, sv = b/Hv*.5+.5;
+      if (mode === "atlas") { if (id === 0) U.push(su*.8, sv); else if (id === 2 || id === 3) U.push(.8+su*.2, sv); else U.push(.905, .015); }
+      else if (mode === "front") { if (id === 0) U.push(su, sv); else U.push(.004, .004); }
+      else { if (id < 2) U.push(a*uvs, b*uvs+.37); else if (id < 4) U.push(a*uvs+.2, b*uvs); else U.push(a*uvs, b*uvs+.7); }
+    }));
+    const nu = tu.length;
+    for (let j = 0; j < tv.length-1; j++) for (let i = 0; i < nu-1; i++) { const A = base+j*nu+i, B = A+1, C = A+nu, D = C+1; I.push(A,B,D, A,D,C); }
+  }
+  return geo(P_, N, U, I);
+}
+/* Tube cosmétique : section ronde qui s'aplatit jusqu'au pli scellé */
+function tubeBody(r, y0, h, seg = 28) {
+  const P_ = [], N = [], U = [], I = [], rings = 14;
+  for (let i = 0; i <= rings; i++) {
+    const t = i/rings, a = r*(1+.56*t), b = Math.max(r*(1-t*t*.2-t*.8), .0009), y = y0+h*t;
+    for (let j = 0; j <= seg; j++) {
+      const f = -Math.PI+j/seg*Math.PI*2, s = Math.sin(f), c = Math.cos(f);
+      P_.push(a*s, y, b*c); let nx = s/a, nz = c/b; const nl = Math.hypot(nx,nz); nx/=nl; nz/=nl; N.push(nx, .07, nz); U.push(j/seg, t);
+    }
+  }
+  for (let i = 0; i < rings; i++) for (let j = 0; j < seg; j++) { const A = i*(seg+1)+j, B = A+1, C = A+seg+1, D = C+1; I.push(A,B,D, A,D,C); }
+  return geo(P_, N, U, I);
+}
+
+/* ===== Textures dessinées ===== */
+const FD = '"Italiana","Didot","Bodoni 72",Georgia,serif', FB = '"Jost","Avenir Next","Segoe UI",Arial,sans-serif';
+function texFrom(cv, repeat = false) {
+  const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.SRGB8_ALPHA8, gl.RGBA, gl.UNSIGNED_BYTE, cv);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+  gl.generateMipmap(gl.TEXTURE_2D);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+  const w = repeat ? gl.REPEAT : gl.CLAMP_TO_EDGE; gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, w); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, w);
+  if (aniso) gl.texParameterf(gl.TEXTURE_2D, aniso.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(maxAniso, 12));
+  return t;
+}
+function draw(w, h, fn, repeat) { const c = document.createElement("canvas"); c.width = w; c.height = h; const x = c.getContext("2d"); fn(x, w, h); return texFrom(c, repeat); }
+function T(x, s, cx, cy, px, o = {}) {
+  x.save();
+  x.font = `${o.w||400} ${px}px ${o.f||FB}`; x.fillStyle = o.c||"#000"; x.textAlign = o.a||"center"; x.textBaseline = "middle";
+  if (o.ls !== undefined && "letterSpacing" in x) x.letterSpacing = o.ls+"px";
+  if (o.max) { const m = x.measureText(s).width; if (m > o.max) { x.translate(cx, cy); x.scale(o.max/m, 1); x.fillText(s, 0, 0); x.restore(); return; } }
+  x.fillText(s, cx, cy); x.restore();
+}
+const ink = { brume: "#1b3a38", rosee: "#5b2f2b", nuit: "#e6c9a0", perle: "#2a3a38" };
+function bars(x, X, Y, W, H, col) { x.fillStyle = col; let i = X, s = 7; while (i < X+W) { s = (s*31+11)%97; const b = 1+s%3; x.fillRect(i, Y, b, H); i += b+1+(s>>3)%3; } }
+/* Corps complet : le centre du canevas fait face au client */
+function bodyLabel(w, h, bg, col, gamme, name, sub, vol, opt = {}) {
+  return draw(w, h, (x) => {
+    x.fillStyle = bg; x.fillRect(0, 0, w, h);
+    const cx = w/2, span = opt.span||w*.3;
+    T(x, "ONDÉE", cx, h*(opt.top||.3), h*(opt.brand||.1), { f: FD, c: col, ls: h*.018, max: span });
+    x.fillStyle = col; x.fillRect(cx-span*.11, h*((opt.top||.3)+.08), span*.22, Math.max(1, h*.0028));
+    T(x, gamme.toUpperCase(), cx, h*((opt.top||.3)+.135), h*.024, { c: col, w: 500, ls: h*.007, max: span });
+    T(x, name, cx, h*((opt.top||.3)+.205), h*.05, { f: FD, c: col, max: span });
+    T(x, sub, cx, h*((opt.top||.3)+.27), h*.024, { c: col, w: 400, max: span });
+    T(x, vol, cx, h*.095, h*.025, { c: col, w: 500, ls: 1, max: span });
+    x.globalAlpha = .75;
+    const b = w*.74; for (let i = 0; i < 6; i++) { x.fillStyle = col; x.fillRect(b, h*(.32+i*.04), w*.15*(i%3===2?.6:1), h*.012); }
+    bars(x, b, h*.68, w*.12, h*.09, col);
+  });
+}
+function paperLabel(w, h, bg, col, gamme, name, sub, vol, foil) {
+  return draw(w, h, x => {
+    x.fillStyle = bg; x.fillRect(0, 0, w, h);
+    x.strokeStyle = foil||col; x.lineWidth = Math.max(1,h*.012); x.strokeRect(w*.035, h*.05, w*.93, h*.9);
+    T(x, "ONDÉE", w/2, h*.26, h*.17, { f: FD, c: col, ls: h*.03, max: w*.82 });
+    T(x, gamme.toUpperCase(), w/2, h*.43, h*.055, { c: foil||col, w: 500, ls: h*.015, max: w*.84 });
+    T(x, name, w/2, h*.59, h*.095, { f: FD, c: col, max: w*.86 });
+    T(x, sub, w/2, h*.73, h*.05, { c: col, max: w*.84 });
+    T(x, vol, w/2, h*.86, h*.05, { c: col, w: 500, max: w*.84 });
+  });
+}
+/* Étui carton : 80 % face, 20 % tranche */
+function carton(w, h, bg, col, foil, gamme, name, sub, vol) {
+  return draw(w, h, x => {
+    x.fillStyle = bg; x.fillRect(0, 0, w, h);
+    const W = w*.8;
+    x.fillStyle = foil; x.fillRect(0, h*.905, W, h*.012);
+    /* ondes concentriques gaufrées */
+    x.strokeStyle = foil; x.globalAlpha = .28; x.lineWidth = Math.max(1, h*.0025);
+    for (let i = 1; i < 8; i++) { x.beginPath(); x.ellipse(W*.5, h*.82, W*.075*i, W*.022*i, 0, 0, Math.PI*2); x.stroke(); }
+    x.globalAlpha = 1;
+    T(x, "ONDÉE", W/2, h*.22, W*.17, { f: FD, c: col, ls: W*.022, max: W*.84 });
+    T(x, gamme.toUpperCase(), W/2, h*.31, W*.038, { c: foil, w: 500, ls: W*.012, max: W*.86 });
+    T(x, name, W/2, h*.45, W*.095, { f: FD, c: col, max: W*.86 });
+    T(x, sub, W/2, h*.53, W*.042, { c: col, max: W*.84 });
+    T(x, vol, W/2, h*.955, W*.036, { c: col, w: 500, max: W*.8 });
+    /* tranche */
+    x.fillStyle = "rgba(0,0,0,.04)"; x.fillRect(W, 0, w-W, h*.97);
+    x.save(); x.translate(W+(w-W)/2, h*.45); x.rotate(-Math.PI/2); T(x, "ONDÉE  ·  "+name, 0, 0, (w-W)*.26, { f: FD, c: col, ls: 2, max: h*.72 }); x.restore();
+    bars(x, W+(w-W)*.25, h*.84, (w-W)*.5, h*.08, col);
+  });
+}
+function priceTag(price, unit, note, promo) {
+  return draw(256, 128, x => {
+    x.fillStyle = promo ? "#d9b98a" : "#f7f5ef"; x.fillRect(0, 0, 256, 128);
+    T(x, price, 12, 54, 54, { a: "left", w: 500, c: "#111", f: FB });
+    T(x, note, 12, 96, 19, { a: "left", c: "#333", max: 150 });
+    T(x, unit, 12, 116, 15, { a: "left", c: "#555", max: 150 });
+    bars(x, 172, 68, 72, 44, "#111");
+  });
+}
+function woodTex() { return draw(1024, 512, (x, w, h) => {
+  x.fillStyle = "#b08d62"; x.fillRect(0, 0, w, h);
+  for (let i = 0; i < 620; i++) {
+    const y = rnd()*h, a = .03+rnd()*.08; x.strokeStyle = rnd()>.5 ? `rgba(84,56,30,${a})` : `rgba(226,196,152,${a})`;
+    x.lineWidth = .6+rnd()*2.2; x.beginPath(); x.moveTo(0, y);
+    const c = rnd()*14-7; x.bezierCurveTo(w*.3, y+c, w*.6, y-c, w, y); x.stroke();
+  }
+  for (let i = 0; i < 500; i++) { x.fillStyle = `rgba(60,38,20,${.08+rnd()*.14})`; x.fillRect(rnd()*w, rnd()*h, 10+rnd()*50, 1); }
+}, true); }
+function floorTex() { return draw(1024, 1024, (x, w, h) => {
+  x.fillStyle = "#7f7f7c"; x.fillRect(0, 0, w, h);
+  for (let i = 0; i < 26000; i++) { const v = 90+rnd()*80|0; x.fillStyle = `rgba(${v},${v},${v-3},.5)`; x.fillRect(rnd()*w, rnd()*h, 1+rnd()*3, 1+rnd()*3); }
+}, true); }
+function terrazzo() { return draw(1024, 1024, (x, w, h) => {
+  x.fillStyle = "#b9b6ae"; x.fillRect(0, 0, w, h);
+  const cols = ["#d9d6cf","#8e8b84","#a7a39a","#6d6c67","#c9bfae","#e6e3dc"];
+  for (let i = 0; i < 5200; i++) { x.fillStyle = cols[rnd()*cols.length|0]; x.globalAlpha = .35+rnd()*.5; const r = .6+rnd()*rnd()*7; x.beginPath(); const px = rnd()*w, py = rnd()*h; x.moveTo(px+r, py); const nn = 5+(rnd()*3|0); for (let k = 1; k < nn; k++) { const a = k/nn*6.283, q = r*(.6+rnd()*.7); x.lineTo(px+Math.cos(a)*q, py+Math.sin(a)*q); } x.fill(); }
+  x.globalAlpha = 1;
+}, true); }
+function fronton(w, h, lines) { return draw(w, h, x => {
+  x.fillStyle = "#0a0c0c"; x.fillRect(0, 0, w, h);
+  lines(x);
+}); }
+/* Caisson lumineux : une ondée sur une vitre */
+function lightbox() { return draw(1400, 512, (x, w, h) => {
+  const g = x.createLinearGradient(0, 0, w, h); g.addColorStop(0, "#8fb4b0"); g.addColorStop(.55, "#cbdcd2"); g.addColorStop(1, "#f0dfd2"); x.fillStyle = g; x.fillRect(0, 0, w, h);
+  for (let i = 0; i < 620; i++) {
+    const px = rnd()*w, py = rnd()*h, r = 1.2+rnd()*rnd()*12;
+    const rg = x.createRadialGradient(px-r*.3, py-r*.4, r*.1, px, py, r);
+    rg.addColorStop(0, "rgba(255,255,255,.75)"); rg.addColorStop(.65, "rgba(70,110,110,.16)"); rg.addColorStop(1, "rgba(25,60,60,.32)");
+    x.fillStyle = rg; x.beginPath(); x.ellipse(px, py, r, r*1.14, 0, 0, 7); x.fill();
+  }
+  x.fillStyle = "rgba(15,42,43,.86)"; x.fillRect(0, h*.62, w, h*.38);
+  T(x, "L'eau de pluie, filtrée sur basalte.", w/2, h*.74, 58, { f: FD, c: "#f3f1ea", max: w*.86 });
+  T(x, "Nouvelle gamme Brume. Hydrate 48 h, sans parfum ajouté.", w/2, h*.88, 28, { c: "#d9dfd8", ls: 1, max: w*.8 });
+}); }
+function facingsTex() { return draw(1024, 512, (x, w, h) => {
+  x.fillStyle = "#23282a"; x.fillRect(0, 0, w, h);
+  const pal = ["#dcd6cb","#c1a98c","#6e8583","#b45f58","#e8e2d7","#39474f","#a9c4bb","#d9a9a0","#8c5a3e","#efe9dc","#2c1e33","#c9b16d"];
+  for (let t = 0; t < 4; t++) {
+    const y0 = t*h/4;
+    x.fillStyle = "#3a3d3b"; x.fillRect(0, y0, w, h*.018);
+    x.fillStyle = "#ffeed3"; x.globalAlpha = .28; x.fillRect(0, y0+h*.018, w, h*.03); x.globalAlpha = 1;
+    let px = 0; while (px < w) { const pw = 14+rnd()*20, ph = h*.05+rnd()*h*.075, c = pal[rnd()*pal.length|0]; for (let k = 0, n = 3+(rnd()*7|0); k < n && px < w; k++) { x.fillStyle = c; x.fillRect(px, y0+h/4-ph, pw-3, ph); x.fillStyle = "rgba(20,20,20,.55)"; x.fillRect(px+pw*.2, y0+h/4-ph-h*.012, pw*.45, h*.012); x.fillStyle = "rgba(255,255,255,.16)"; x.fillRect(px+1, y0+h/4-ph, 2, ph); px += pw; } px += rnd()*6; }
+  }
+}, true); }
+
+/* ===== Matériaux, produits, instanciation ===== */
+const mats = {}, prods = {}, batches = new Map();
+const mat = (name, o) => (mats[name] = Object.assign({ base: [1,1,1], r: .5, m: 0, em: [0,0,0], map: null, emMap: false, coat: 0, kind: 0, absorb: [0,0,0], frost: 0, micro: 0, flute: 0, noShadow: false }, o, { name }));
+const prod = (name, parts) => { prods[name] = parts; };
+const part = (g, m, x = 0, y = 0, z = 0, ry = 0) => ({ g, m, t: m4.trs(x, y, z, ry) });
+function put(name, M) { for (const p of prods[name]) { const k = p.g; const key = k.__id || (k.__id = Math.random()); const kk = key+"|"+p.m.name; if (!batches.has(kk)) batches.set(kk, { g: p.g, m: p.m, list: [] }); batches.get(kk).list.push(m4.mul(M, p.t)); } }
+const putRaw = (g, m, M) => { const key = g.__id || (g.__id = Math.random()); const kk = key+"|"+m.name; if (!batches.has(kk)) batches.set(kk, { g, m, list: [] }); batches.get(kk).list.push(M); };
+
+function buildWorld() {
+  const BRASS = hex(0xc9a877), PETROL = hex(0x153a3b), BRUME = hex(0xa9c4bb), ROSEE = hex(0xe7c4b8), PERLE = hex(0xf1eee6), NUIT = hex(0x2c1e33);
+  /* Métaux, plastiques */
+  mat("brass", { base: BRASS, r: .3, m: 1 });
+  mat("gold", { base: hex(0xdcbc86), r: .2, m: 1 });
+  mat("chrome", { base: hex(0xd8d9d8), r: .12, m: 1 });
+  mat("copper", { base: hex(0xc58a5e), r: .24, m: 1 });
+  mat("blackP", { base: hex(0x171918), r: .34, coat: .3 });
+  mat("whiteP", { base: PERLE, r: .36, coat: .25 });
+  mat("rubber", { base: hex(0x2a211f), r: .55 });
+  mat("rubberRose", { base: hex(0xc99a8b), r: .5 });
+  mat("frostLid", { base: hex(0xe9ebe6), r: .3, coat: .4 });
+  mat("creamW", { base: hex(0xf5efe3), r: .32 });
+  mat("creamR", { base: hex(0xf1d6c9), r: .32 });
+  /* Verres */
+  mat("glassAmber", { kind: 1, base: [1,1,1], r: .06, absorb: [.32,.75,1.6] });
+  mat("glassClear", { kind: 1, base: [1,1,1], r: .05, absorb: [.05,.03,.04] });
+  mat("glassFrost", { kind: 1, base: hex(0xeaf0ec), r: .34, absorb: [.14,.08,.1], frost: .018 });
+  mat("glassRose", { kind: 1, base: hex(0xf3d9cf), r: .32, absorb: [.06,.17,.2], frost: .016 });
+  mat("glassNuit", { kind: 1, base: hex(0x3a2340), r: .08, absorb: [.9,1.5,1.0] });
+  /* Liquides (vus à travers le verre) */
+  mat("oilAmber", { base: hex(0xcf8a2c), r: .15, coat: .6 });
+  mat("waterPale", { base: hex(0xcfe2db), r: .1, coat: .6 });
+  mat("waterRose", { base: hex(0xf0c6b7), r: .12, coat: .6 });
+  mat("oilNuit", { base: hex(0x60314a), r: .15, coat: .6 });
+  /* Gondole */
+  const wood = woodTex();
+  mat("oak", { map: wood, r: .42, coat: .25 });
+  mat("oakEdge", { map: wood, base: [.86,.84,.8], r: .36, coat: .3 });
+  mat("petrol", { base: PETROL, r: .24, coat: .55 });
+  mat("petrolFlute", { base: PETROL, r: .3, coat: .3, flute: 42 });
+  mat("plinth", { base: hex(0x0f2a2b), r: .2, coat: .7 });
+  mat("kick", { base: hex(0x121413), r: .4, m: .4 });
+  mat("ledStrip", { base: [.1,.1,.1], r: .5, em: [6.5,5.8,4.7] });
+  mat("paper", { base: hex(0xf7f5ef), r: .6 });
+  /* Magasin */
+  mat("floor", { kind: 2, map: terrazzo(), r: .2 });
+  mat("wall", { base: hex(0xe2dccf), r: .7, em: [.12,.115,.105] });
+  mat("ceil", { base: hex(0xdedbd3), r: .85 });
+  mat("ceilLight", { base: [0,0,0], em: [17,16.2,15] });
+  mat("track", { base: hex(0x161716), r: .4, m: .6 });
+  mat("facings", { map: facingsTex(), base: [1,1,1], r: .5, coat: .2, em: [0,0,0] });
+  mat("neighbor", { base: hex(0x2a2f30), r: .4, coat: .2 });
+  mat("podium", { base: hex(0xece7dd), r: .22, coat: .7 });
+  mat("mirror", { base: [.9,.9,.9], r: .03, m: 1 });
+
+  /* ---- Fronton et PLV ---- */
+  mat("frontonFace", { map: fronton(2048, 560, x => {
+    const w = 2048, h = 560;
+    T(x, "ONDÉE", w/2, h*.42, 250, { f: FD, c: "#fff3df", ls: 42, max: w*.72 });
+    T(x, "SOINS NÉS DE LA PLUIE", w/2, h*.83, 54, { c: "#d9b98a", w: 400, ls: 24, max: w*.74 });
+  }), emMap: true, base: [.02,.02,.02], em: [5.2,5.2,5.2], r: .08, coat: 1 });
+  mat("fasciaFace", { map: fronton(2048, 128, x => { for (let i = 0; i < 3; i++) T(x, "ONDÉE", 2048*(i+.5)/3, 66, 84, { f: FD, c: "#fff3df", ls: 16 }); }), emMap: true, base: [.02,.02,.02], em: [3.2,3.2,3.2], r: .1, coat: 1 });
+  mat("lightbox", { map: lightbox(), emMap: true, base: [.02,.02,.02], em: [1.5,1.5,1.5], r: .06, coat: 1 });
+  mat("wobbler", { map: draw(256, 256, x => { x.fillStyle = "#d9b98a"; x.fillRect(0,0,256,256); T(x, "Nouveau", 128, 108, 54, { f: FD, c: "#10282a", max: 210 }); T(x, "−20 % sur le 2e", 128, 158, 25, { c: "#10282a", w: 500, max: 200 }); }), r: .45 });
+
+  /* ---- Étiquettes de prix ---- */
+  const tags = [
+    ["tag1", "39,90 €", "1 330,00 € / l", "Sérum Pluie Vive"], ["tag2", "42,50 €", "850,00 € / l", "Crème de Nuée"],
+    ["tag3", "24,90 €", "124,50 € / l", "Lait de Brume"], ["tag4", "19,90 €", "398,00 € / l", "Baume Rosée"],
+    ["tag5", "18,50 €", "185,00 € / l", "Eau de Brume"], ["tag6", "14,90 €", "37,25 € / l", "Eau micellaire"],
+    ["tag7", "59,00 €", "le coffret", "Rituel Ondée"]
+  ];
+  tags.forEach((t, i) => mat(t[0], { map: priceTag(t[1], t[2], t[3], i === 6), r: .35, coat: .3 }));
+  const gTag = rbox(.068, .03, .0015, .0005, "front");
+  const tagN = i => "tag"+i;
+
+  /* ---- Produits ---- */
+  const LATHE = 30;
+  /* Sérum compte-gouttes 30 ml, verre ambré */
+  const gSerum = lathe([[0,0],[.0155,0,.002],[.0165,.002,.0015],[.0165,.058,.004],[.0075,.067,.003],[.0075,.073,.0005],[0,.073]], LATHE);
+  const gSerumL = lathe([[0,.002],[.0145,.002,.001],[.0148,.052,.001],[0,.052]], 22);
+  const gCollar = lathe([[0,.0705],[.0095,.0705,.0006],[.0095,.087,.0008],[0,.087]], 22);
+  const gBulb = lathe([[0,.087],[.0068,.087,.0005],[.0072,.1,.003],[.0058,.113,.004],[0,.116]], 20);
+  const gLabelS = arc(.01672, .012, .05, 2.55);
+  mat("lblSerum", { map: paperLabel(600, 300, "#f3efe6", "#15393a", "Brume", "Sérum Pluie Vive", "Acide hyaluronique 2 %", "30 ml · 1.0 fl.oz", "#a57f45"), r: .5 });
+  mat("lblSerumN", { map: paperLabel(600, 300, "#1d1422", "#e6c9a0", "Nuit", "Élixir de Nuit", "Rétinal 0,1 % · Squalane", "30 ml · 1.0 fl.oz", "#c58a5e"), r: .42 });
+  prod("serum", [part(gSerumL,mats.oilAmber), part(gSerum,mats.glassAmber), part(gCollar,mats.gold), part(gBulb,mats.rubber), part(gLabelS,mats.lblSerum)]);
+  prod("serumN", [part(gSerumL,mats.oilNuit), part(gSerum,mats.glassNuit), part(gCollar,mats.copper), part(gBulb,mats.rubber), part(gLabelS,mats.lblSerumN)]);
+  /* Pot de crème 50 ml, verre dépoli épais et couvercle laiton */
+  const gJar = lathe([[0,0],[.0325,0,.005],[.0345,.005,.005],[.0345,.034,.004],[.028,.039,.002],[.028,.041,.0005],[0,.041]], 36);
+  const gJarIn = lathe([[0,.006],[.0275,.006,.003],[.0275,.037,.002],[0,.037]], 30);
+  const gLid = lathe([[0,.039],[.0343,.039,.0008],[.0348,.0405,.0008],[.0348,.0605,.002],[.0325,.0628,.002],[0,.0628]], 36);
+  const gJarL = arc(.03465, .009, .031, 2.4, 26);
+  mat("lblJar", { map: paperLabel(700, 180, "#f3efe6", "#15393a", "Brume", "Crème de Nuée", "48 h · Peaux sèches", "50 ml", "#a57f45"), r: .5 });
+  mat("lblJarR", { map: paperLabel(700, 180, "#f8ece6", "#5b2f2b", "Rosée", "Crème Aube", "Niacinamide 5 %", "50 ml", "#a5694f"), r: .5 });
+  prod("jar", [part(gJarIn,mats.creamW), part(gJar,mats.glassFrost), part(gLid,mats.brass), part(gJarL,mats.lblJar)]);
+  prod("jarR", [part(gJarIn,mats.creamR), part(gJar,mats.glassRose), part(gLid,mats.gold), part(gJarL,mats.lblJarR)]);
+  /* Lait pour le corps, flacon pompe 200 ml */
+  const gPump = lathe([[0,0],[.0245,0,.003],[.0265,.003,.003],[.0265,.112,.012],[.012,.125,.004],[.012,.13,.0006],[0,.13]], LATHE);
+  const gPumpC = lathe([[0,.128],[.0135,.128,.0008],[.0135,.141,.0012],[.0052,.141,.0008],[.0052,.158,.001],[0,.158]], 22);
+  const gPumpH = rbox(.052, .012, .02, .0035, "front");
+  const gNozzle = lathe([[0,0],[.0034,0,.0006],[.0034,.02,.0006],[0,.02]], 12);
+  const pumpT = (bg, c, g, n, s, v) => bodyLabel(1024, 768, bg, c, g, n, s, v, { top: .22, brand: .13, span: 310 });
+  mat("pumpB", { map: pumpT("#a9c4bb", "#14302f", "Brume", "Lait de Brume", "Eau de pluie · Céramides", "200 ml"), r: .4, coat: .35 });
+  mat("pumpR", { map: pumpT("#e7c4b8", "#5b2f2b", "Rosée", "Lait Rosée", "Rose de mai · Karité", "200 ml"), r: .4, coat: .35 });
+  mat("pumpW", { map: pumpT("#f1eee6", "#15393a", "Essentiels", "Gel Lavant", "Doux, sans savon", "200 ml"), r: .4, coat: .35 });
+  ["B","R","W"].forEach(s => prod("pump"+s, [part(gPump,mats["pump"+s]), part(gPumpC,mats.gold), { g: gPumpH, m: mats.gold, t: m4.trs(.006,.162,0) }, { g: gNozzle, m: mats.gold, t: new Float32Array([0,1,0,0, -1,0,0,0, 0,0,1,0, .034,.1635,0,1]) }]));
+  /* Tube 50 ml debout sur son bouchon */
+  const gTube = tubeBody(.0178, .024, .104);
+  const gTubeC = lathe([[0,0],[.0175,0,.0015],[.0178,.002,.001],[.0178,.0245,.0008],[0,.0245]], 26);
+  const gCrimp = rbox(.0565, .006, .0019, .0007, "front");
+  const tubeT = (bg, c, g, n, s, v) => draw(1024, 700, x => {
+    x.fillStyle = bg; x.fillRect(0,0,1024,700);
+    const cx = 512, sp = 300;
+    T(x, "ONDÉE", cx, 170, 72, { f: FD, c, ls: 12, max: sp });
+    x.fillStyle = c; x.fillRect(cx-32, 225, 64, 2);
+    T(x, g.toUpperCase(), cx, 260, 20, { c, w: 500, ls: 6, max: sp });
+    T(x, n, cx, 330, 46, { f: FD, c, max: sp });
+    T(x, s, cx, 390, 22, { c, max: sp });
+    T(x, v, cx, 560, 22, { c, w: 500, max: sp });
+  });
+  mat("tubeR", { map: tubeT("#e7c4b8", "#5b2f2b", "Rosée", "Baume Rosée", "Lèvres et zones sèches", "50 ml"), r: .32, coat: .5 });
+  mat("tubeB", { map: tubeT("#d2e0d9", "#14302f", "Brume", "Masque Nuée", "Argile blanche · Algues", "50 ml"), r: .32, coat: .5 });
+  mat("tubeW", { map: tubeT("#f4f1e9", "#15393a", "Essentiels", "SPF 50 Voile", "Invisible, sans traces", "50 ml"), r: .3, coat: .5 });
+  ["R","B","W"].forEach(s => prod("tube"+s, [part(gTube,mats["tube"+s]), part(gTubeC,s==="R"?mats.gold:mats.brass), part(gCrimp,mats["tube"+s],0,.1285,0)]));
+  /* Brume 100 ml */
+  const gMist = lathe([[0,0],[.0205,0,.002],[.022,.002,.002],[.022,.099,.005],[.0105,.106,.002],[.0105,.11,.0005],[0,.11]], LATHE);
+  const gMistL = lathe([[0,.003],[.0205,.003,.0012],[.0208,.09,.0012],[0,.09]], 24);
+  const gMistC = lathe([[0,.108],[.012,.108,.0006],[.012,.118,.0006],[.0085,.118,.0006],[.0085,.133,.0025],[0,.135]], 22);
+  const gMistA = arc(.02215, .02, .08, 2.4, 22);
+  mat("lblMist", { map: paperLabel(480, 420, "#f3efe6", "#15393a", "Brume", "Eau de Brume", "Rafraîchit et fixe", "100 ml", "#a57f45"), r: .5 });
+  mat("lblMistR", { map: paperLabel(480, 420, "#f8ece6", "#5b2f2b", "Rosée", "Eau de Rose", "Distillée à la vapeur", "100 ml", "#a5694f"), r: .5 });
+  prod("mist", [part(gMistL,mats.waterPale), part(gMist,mats.glassClear), part(gMistC,mats.chrome), part(gMistA,mats.lblMist)]);
+  prod("mistR", [part(gMistL,mats.waterRose), part(gMist,mats.glassClear), part(gMistC,mats.gold), part(gMistA,mats.lblMistR)]);
+  /* Eau micellaire 400 ml */
+  const gBig = lathe([[0,0],[.031,0,.004],[.033,.004,.004],[.033,.15,.018],[.0165,.17,.004],[.0165,.176,.0005],[0,.176]], LATHE);
+  const gBigL = lathe([[0,.005],[.0315,.005,.002],[.0318,.14,.012],[0,.15]], 26);
+  const gBigC = lathe([[0,.172],[.0185,.172,.0008],[.0185,.2,.0016],[0,.2]], 24);
+  const gBigA = arc(.03315, .02, .135, 2.3, 26);
+  mat("lblBig", { map: paperLabel(520, 520, "#f6f3ec", "#15393a", "Essentiels", "Eau micellaire", "Démaquille, apaise, sans rinçage", "400 ml", "#a57f45"), r: .5 });
+  prod("big", [part(gBigL,mats.waterPale), part(gBig,mats.glassClear), part(gBigC,mats.frostLid), part(gBigA,mats.lblBig)]);
+  /* Étuis */
+  const boxT = [
+    ["boxSerum", 512, 900, "#a9c4bb", "#14302f", "#7a5c2e", "Brume", "Pluie Vive", "Acide hyaluronique 2 %", "30 ml"],
+    ["boxNuit", 512, 900, "#21162a", "#efdcbf", "#c58a5e", "Nuit", "Élixir de Nuit", "Rétinal 0,1 %", "30 ml"],
+    ["boxRose", 512, 900, "#e7c4b8", "#5b2f2b", "#8a5a48", "Rosée", "Crème Aube", "Niacinamide 5 %", "50 ml"],
+    ["boxPerle", 512, 900, "#f1eee6", "#15393a", "#a57f45", "Brume", "Crème de Nuée", "48 h · Peaux sèches", "50 ml"]
+  ];
+  boxT.forEach(b => mat(b[0], { map: carton(b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9]), r: .42, coat: .4 }));
+  const gBoxTall = rbox(.052, .125, .042, .0012), gBoxCube = rbox(.074, .074, .074, .0014);
+  prod("boxSerum", [part(gBoxTall,mats.boxSerum,0,.0625)]); prod("boxNuit", [part(gBoxTall,mats.boxNuit,0,.0625)]);
+  prod("boxRose", [part(gBoxCube,mats.boxRose,0,.037)]); prod("boxPerle", [part(gBoxCube,mats.boxPerle,0,.037)]);
+  mat("coffretF", { map: draw(1400, 1000, x => {
+    const g = x.createLinearGradient(0,0,0,1000); g.addColorStop(0,"#163c3d"); g.addColorStop(1,"#0d2728"); x.fillStyle = g; x.fillRect(0,0,1400,1000);
+    x.strokeStyle = "#d9b98a"; x.lineWidth = 3; x.strokeRect(30, 30, 1056, 940);
+    x.globalAlpha = .4; for (let i = 1; i < 11; i++) { x.beginPath(); x.ellipse(558, 760, 46*i, 15*i, 0, 0, 7); x.stroke(); } x.globalAlpha = 1;
+    T(x, "ONDÉE", 558, 250, 158, { f: FD, c: "#f4e3c8", ls: 18 });
+    T(x, "COFFRET RITUEL", 558, 370, 40, { c: "#d9b98a", ls: 12, w: 500 });
+    T(x, "Sérum · Crème · Brume", 558, 450, 62, { f: FD, c: "#f3f1ea" });
+    x.save(); x.translate(1243, 500); x.rotate(-Math.PI/2); T(x, "ONDÉE  ·  Coffret Rituel", 0, 0, 62, { f: FD, c: "#f4e3c8", ls: 4 }); x.restore();
+  }), r: .36, coat: .55 });
+  const gCoffret = rbox(.25, .19, .07, .002);
+  prod("coffret", [part(gCoffret,mats.coffretF,0,.095)]);
+
+  /* ---- Structure de la gondole ---- */
+  const W = 1.25, L = 3, D = .4, SIDEW = L-2*D, Y = [.16,.44,.72,1,1.28,1.56];
+  const faces = [
+    { id: "F", w: W, m: m4.trs(0,0,L/2,0) }, { id: "B", w: W, m: m4.trs(0,0,-L/2,Math.PI) },
+    { id: "R", w: SIDEW, m: m4.trs(W/2,0,0,Math.PI/2) }, { id: "L", w: SIDEW, m: m4.trs(-W/2,0,0,-Math.PI/2) }
+  ];
+  const at = (f, x, y, z, ry = 0, s = 1) => m4.mul(f.m, m4.trs(x, y, z, ry, s));
+  putRaw(rbox(W-.01, .13, L-.01, .004, "world"), mats.plinth, m4.trs(0,.075,0));
+  putRaw(rbox(W-.05, .03, L-.05, .002, "world"), mats.kick, m4.trs(0,.008,0));
+  putRaw(rbox(W+.05, .032, L+.05, .006, "world"), mats.petrol, m4.trs(0,1.858,0));
+  /* Parois */
+  const backW = rbox(W-.04, 1.72, .03, .002, "world", 1), backS = rbox(SIDEW, 1.72, .03, .002, "world", 1);
+  const shelfH = rbox(W-.05, .03, D, .004, "world", .5), shelfS = rbox(SIDEW-.02, .03, D, .004, "world", .5);
+  const deckH = rbox(W-.05, .03, D+.01, .003, "world", .5), deckS = rbox(SIDEW-.02, .03, D+.01, .003, "world", .5);
+  const led = rbox(1, .006, .012, .002, "world");
+  const endP = rbox(.024, 1.72, D+.02, .005, "world", 1);
+  faces.forEach(f => {
+    const head = f.w === W;
+    putRaw(head?backW:backS, mats.petrolFlute, at(f,0,1,-D));
+    Y.forEach((y, i) => {
+      const g = i === 0 ? (head?deckH:deckS) : (head?shelfH:shelfS);
+      putRaw(g, i === 0 ? mats.oakEdge : mats.oak, at(f,0,y-.015,-D/2));
+      if (i > 0) { const M = at(f,0,y-.033,-.012); M[0]*=(f.w-.08); M[1]*=(f.w-.08); M[2]*=(f.w-.08); putRaw(led, mats.ledStrip, M); }
+    });
+    { const M = at(f,0,1.84-.033,-.012); M[0]*=(f.w-.08); M[1]*=(f.w-.08); M[2]*=(f.w-.08); putRaw(led, mats.ledStrip, M); }
+    if (head) { putRaw(endP, mats.petrol, at(f,-W/2+.012,1,-D/2)); putRaw(endP, mats.petrol, at(f,W/2-.012,1,-D/2)); }
+    else { const div = rbox(.02,1.72,D-.01,.004,"world"); putRaw(div, mats.petrol, at(f,-.37,1,-D/2)); putRaw(div, mats.petrol, at(f,.37,1,-D/2)); }
+  });
+  /* Fronton lumineux */
+  const gFrame = rbox(W+.02, .36, .1, .004, "world"), gFace = rbox(W-.02, .325, .004, .001, "front"), gTrim = rbox(W+.004, .344, .004, .001, "world"), gFasc = rbox(SIDEW, .1, .05, .003, "world"), gFascF = rbox(SIDEW-.05, .075, .004, .001, "front");
+  faces.forEach(f => {
+    if (f.w === W) { putRaw(gFrame, mats.petrol, at(f,0,2.05,-.055)); putRaw(gTrim, mats.brass, at(f,0,2.05,-.0045)); putRaw(gFace, mats.frontonFace, at(f,0,2.05,-.002)); }
+    else { putRaw(gFasc, mats.petrol, at(f,0,1.925,-.05)); putRaw(gFascF, mats.fasciaFace, at(f,0,1.925,-.024)); }
+  });
+  /* Caisson lumineux haut */
+  const gLB = rbox(.7, .256, .008, .001, "front"), gLBF = rbox(.72, .276, .02, .002, "world");
+  [faces[0], faces[1]].forEach(f => { putRaw(gLBF, mats.brass, at(f,0,1.67,-D+.026)); putRaw(gLB, mats.lightbox, at(f,0,1.67,-D+.04)); });
+
+  /* ---- Implantation ---- */
+  const jit = () => (rnd()-.5)*.09;
+  const tag = (f, x, y, i) => putRaw(gTag, mats[tagN(i)], at(f, x, y-.017, .0025));
+  function row(f, y, z, x0, x1, name, pitch, jz = .004) {
+    const n = Math.floor((x1-x0)/pitch+1e-6), s = x0+((x1-x0)-(n-1)*pitch)/2;
+    for (let i = 0; i < n; i++) put(name, at(f, s+i*pitch+(rnd()-.5)*.0016, y, z+(rnd()-.5)*jz, jit()));
+  }
+  function riser(f, x, y, w, d, h, z) { const g = rbox(w, h, d, .003, "world"); putRaw(g, mats.podium, at(f,x,y+h/2,z)); }
+  function head(f, flip) {
+    const sx = flip ? -1 : 1; const A = (a, b) => flip ? [-b,-a] : [a,b];
+    let r;
+    /* Socle : grands formats et coffrets */
+    r = A(-.56,-.17); row(f,Y[0],-.085,r[0],r[1],"big",.078); row(f,Y[0],-.21,r[0],r[1],"big",.078);
+    r = A(.17,.56); row(f,Y[0],-.085,r[0],r[1],"big",.078); row(f,Y[0],-.21,r[0],r[1],"big",.078);
+    put("coffret", at(f,0,Y[0],-.07,sx*.02)); put("coffret", at(f,0,Y[0],-.17,-.03)); put("coffret", at(f,0,Y[0]+.19,-.15,.05));
+    tag(f,-.36,Y[0],6); tag(f,0,Y[0],7); tag(f,.36,Y[0],6);
+    /* Tubes */
+    r = A(-.56,-.2); row(f,Y[1],-.075,r[0],r[1],"tubeR",.064); r = A(-.56,-.2); riser(f,(r[0]+r[1])/2,Y[1],.36,.11,.04,-.215); row(f,Y[1]+.04,-.215,r[0],r[1],"tubeR",.066);
+    r = A(-.17,.17); row(f,Y[1],-.075,r[0],r[1],"tubeW",.064); r = A(-.17,.17); riser(f,(r[0]+r[1])/2,Y[1],.34,.11,.04,-.215); row(f,Y[1]+.04,-.215,r[0],r[1],"tubeW",.066);
+    r = A(.2,.56); row(f,Y[1],-.075,r[0],r[1],"tubeB",.064); r = A(.2,.56); riser(f,(r[0]+r[1])/2,Y[1],.36,.11,.04,-.215); row(f,Y[1]+.04,-.215,r[0],r[1],"tubeB",.066);
+    tag(f,-.38,Y[1],4); tag(f,0,Y[1],4); tag(f,.38,Y[1],4);
+    /* Laits corps */
+    r = A(-.56,-.03); row(f,Y[2],-.08,r[0],r[1],"pumpB",.074); row(f,Y[2],-.2,r[0],r[1],"pumpB",.074);
+    r = A(.03,.56); row(f,Y[2],-.08,r[0],r[1],"pumpR",.074); row(f,Y[2],-.2,r[0],r[1],"pumpR",.074);
+    tag(f,-.3,Y[2],3); tag(f,.3,Y[2],3);
+    /* Brumes et crèmes roses */
+    r = A(-.56,-.2); riser(f,(r[0]+r[1])/2,Y[3],.36,.12,.05,-.21); row(f,Y[3]+.05,-.21,r[0],r[1],"boxRose",.086); row(f,Y[3],-.07,r[0],r[1],"jarR",.078);
+    r = A(-.17,.17); row(f,Y[3],-.07,r[0],r[1],"mist",.056); r = A(-.17,.17); riser(f,(r[0]+r[1])/2,Y[3],.34,.12,.05,-.21); row(f,Y[3]+.05,-.21,r[0],r[1],"mist",.058);
+    r = A(.2,.56); riser(f,(r[0]+r[1])/2,Y[3],.36,.12,.05,-.21); row(f,Y[3]+.05,-.21,r[0],r[1],"mistR",.058); row(f,Y[3],-.07,r[0],r[1],"mistR",.056);
+    tag(f,-.38,Y[3],2); tag(f,0,Y[3],5); tag(f,.38,Y[3],5);
+    /* Niveau des yeux : la crème héroïne et les sérums */
+    r = A(-.56,-.2); riser(f,(r[0]+r[1])/2,Y[4],.36,.12,.055,-.21); row(f,Y[4]+.055,-.21,r[0],r[1],"boxSerum",.06); row(f,Y[4],-.07,r[0],r[1],"serum",.046);
+    r = A(.2,.56); riser(f,(r[0]+r[1])/2,Y[4],.36,.12,.055,-.21); row(f,Y[4]+.055,-.21,r[0],r[1],"boxSerum",.06); row(f,Y[4],-.07,r[0],r[1],"serum",.046);
+    riser(f,0,Y[4],.34,.12,.075,-.21); row(f,Y[4]+.075,-.21,-.15,.15,"boxPerle",.082);
+    row(f,Y[4],-.07,-.15,.15,"jar",.078);
+    tag(f,-.38,Y[4],1); tag(f,0,Y[4],2); tag(f,.38,Y[4],1);
+    { const g = rbox(.058,.058,.0016,.0005,"front"); const Mw = at(f,.15*sx,Y[4]-.03-.031,.002); putRaw(g, mats.wobbler, Mw); }
+    /* Haut : gamme Nuit sous le caisson */
+    r = A(-.56,-.38); row(f,Y[5],-.07,r[0],r[1],"serumN",.046); row(f,Y[5],-.2,r[0],r[1],"boxNuit",.06);
+    r = A(.38,.56); row(f,Y[5],-.07,r[0],r[1],"serumN",.046); row(f,Y[5],-.2,r[0],r[1],"boxNuit",.06);
+    row(f,Y[5],-.075,-.33,.33,"jar",.08);
+    tag(f,-.47,Y[5],1); tag(f,0,Y[5],2); tag(f,.47,Y[5],1);
+  }
+  head(faces[0], false); head(faces[1], true);
+  /* Côtés : linéaire classique par familles */
+  [faces[2], faces[3]].forEach(f => {
+    const fam = [
+      ["big","big","big"], ["tubeB","tubeW","tubeR"], ["pumpW","pumpB","pumpR"], ["mist","jar","mistR"], ["serum","jarR","serumN"], ["boxSerum","boxPerle","boxNuit"]
+    ];
+    const zones = [[-1.07,-.39],[-.35,.35],[.39,1.07]];
+    Y.forEach((y, ti) => zones.forEach((zn, zi) => {
+      const name = fam[ti][zi], pitch = { big: .08, tubeB: .068, tubeW: .068, tubeR: .068, pumpW: .08, pumpB: .08, pumpR: .08, mist: .058, mistR: .058, jar: .082, jarR: .082, serum: .05, serumN: .05, boxSerum: .062, boxPerle: .082, boxNuit: .062 }[name];
+      row(f,y,-.08,zn[0],zn[1],name,pitch);
+      const backName = { big: "big", tubeB: "tubeB", tubeW: "tubeW", tubeR: "tubeR", pumpW: "pumpW", pumpB: "pumpB", pumpR: "pumpR", mist: "boxRose", mistR: "boxPerle", jar: "boxPerle", jarR: "boxRose", serum: "boxSerum", serumN: "boxNuit", boxSerum: "boxSerum", boxPerle: "boxPerle", boxNuit: "boxNuit" }[name];
+      row(f,y,-.215,zn[0],zn[1],backName,Math.max(pitch,.066));
+      tag(f,(zn[0]+zn[1])/2,y,[6,4,3,5,1,1][ti]);
+    }));
+  });
+  /* Podiums au sol avec pot géant factice */
+  putRaw(lathe([[0,0],[.27,0,.006],[.27,.46,.01],[0,.46]], 64), mats.podium, m4.trs(-1.08,0,2.12));
+  putRaw(lathe([[0,0],[.19,0,.006],[.19,.26,.008],[0,.26]], 56), mats.podium, m4.trs(-.76,0,2.3));
+  put("jar", m4.trs(-1.08,.46,2.12,.3,3.1));
+  put("serum", m4.trs(-.72,.26,2.32,.25,1)); put("jarR", m4.trs(-.82,.26,2.38,.1,1)); put("mist", m4.trs(-.76,.26,2.22,-.2,1));
+  put("tubeB", m4.trs(-.64,.26,2.24,-.5,1));
+
+  /* ---- Magasin ---- */
+  const RX = 9, RZ = 9, RH = 3.6;
+  const plane = (w, d) => { const hw = w/2, hd = d/2; return geo([-hw,0,hd, hw,0,hd, hw,0,-hd, -hw,0,-hd], [0,1,0,0,1,0,0,1,0,0,1,0], [0,0,w,0,w,d,0,d], [0,1,2,0,2,3]); };
+  putRaw(plane(RX*2, RZ*2), mats.floor, m4.id());
+  const flip = new Float32Array([1,0,0,0, 0,-1,0,0, 0,0,-1,0, 0,RH,0,1]);
+  putRaw(plane(RX*2, RZ*2), mats.ceil, flip);
+  const wallG = rbox(RX*2, RH, .1, .001, "world");
+  putRaw(wallG, mats.wall, m4.trs(0,RH/2,-RZ-.05)); putRaw(wallG, mats.wall, m4.trs(0,RH/2,RZ+.05));
+  putRaw(wallG, mats.wall, m4.trs(-RX-.05,RH/2,0,Math.PI/2)); putRaw(wallG, mats.wall, m4.trs(RX+.05,RH/2,0,Math.PI/2));
+  /* Rails lumineux du plafond, alignés sur le reflet analytique */
+  const gStrip = rbox(.4, .012, 1.84, .002, "world"), gRim = rbox(.44, .01, 1.88, .002, "world");
+  for (let i = -3; i <= 3; i++) for (let j = -3; j <= 3; j++) { putRaw(gRim, mats.track, m4.trs(i*2.6,RH-.005,j*2.4)); putRaw(gStrip, mats.ceilLight, m4.trs(i*2.6,RH-.012,j*2.4)); }
+  /* Gondoles voisines et linéaires muraux, volontairement lointains */
+  const gNeighbor = rbox(1.1, 2.0, 6.4, .01, "world", .62), gWallS = rbox(14, 2.2, .45, .01, "world", .62);
+  [[-6,0],[6,0]].forEach(p => {
+    putRaw(gNeighbor, mats.facings, m4.trs(p[0],1,p[1]));
+    putRaw(rbox(1.14,.1,6.44,.01,"world"), mats.neighbor, m4.trs(p[0],2.05,p[1]));
+  });
+  putRaw(gWallS, mats.facings, m4.trs(0,1.1,-RZ+.25)); putRaw(gWallS, mats.facings, m4.trs(0,1.1,RZ-.25));
+  /* Projecteurs sur rail au-dessus de la gondole */
+  const gSpot = lathe([[0,0],[.045,0,.002],[.05,.05,.002],[.05,.17,.003],[0,.17]], 22), gSpotE = lathe([[0,0],[.042,0],[0,0.001]], 20);
+  mat("spotGlow", { base: [0,0,0], em: [40,36,30] });
+  const rail = rbox(1.5,.03,.04,.003,"world");
+  [[2.9,1],[-2.9,-1]].forEach(([z,s]) => {
+    putRaw(rail, mats.track, m4.trs(0,RH-.02,z));
+    [-.42,.0,.42].forEach(x => { const M = m4.trs(x,RH-.21,z); putRaw(gSpot, mats.track, M); putRaw(gSpotE, mats.spotGlow, m4.trs(x,RH-.212,z)); });
+  });
+
+  /* Téléversement des instances */
+  const list = [];
+  batches.forEach(b => {
+    const arr = new Float32Array(b.list.length*16); b.list.forEach((m, i) => arr.set(m, i*16));
+    const inst = gl.createBuffer(); gl.bindVertexArray(b.g.vao); gl.bindBuffer(gl.ARRAY_BUFFER, inst); gl.bufferData(gl.ARRAY_BUFFER, arr, gl.STATIC_DRAW);
+    list.push({ vao: gl.createVertexArray(), g: b.g, m: b.m, n: b.list.length, buf: inst });
+    gl.bindVertexArray(null);
+  });
+  return list;
+}
+
+/* Chaque lot partage la géométrie mais possède son tampon d'instances : on relie les attributs à la volée */
+function bindInstances(b) {
+  gl.bindVertexArray(b.g.vao); gl.bindBuffer(gl.ARRAY_BUFFER, b.buf);
+  for (let i = 0; i < 4; i++) { const l = 3+i; gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l, 4, gl.FLOAT, false, 64, i*16); gl.vertexAttribDivisor(l, 1); }
+}
+
+/* ===== Cibles de rendu ===== */
+function tex2(w, h, fmt, mips, filter) {
+  const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.texStorage2D(gl.TEXTURE_2D, mips, fmt.i, w, h);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, mips > 1 ? gl.LINEAR_MIPMAP_LINEAR : (filter||gl.LINEAR));
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter||gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  return t;
+}
+function fbT(t) { const f = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, f); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0); return f; }
+const R = {};
+let RW = 0, RH_ = 0, quality = (window.matchMedia && matchMedia("(pointer: coarse)").matches) ? .8 : 1;
+function allocate() {
+  const dpr = Math.min(window.devicePixelRatio||1, 1.75) * quality;
+  const w = Math.max(2, Math.round(canvas.clientWidth*dpr)), h = Math.max(2, Math.round(canvas.clientHeight*dpr));
+  if (w === RW && h === RH_) return false;
+  RW = w; RH_ = h; canvas.width = w; canvas.height = h;
+  for (const k in R) { const v = R[k]; if (v && v.del) v.del(); }
+  const samples = Math.min(4, gl.getParameter(gl.MAX_SAMPLES));
+  const msFB = gl.createFramebuffer(), msC = gl.createRenderbuffer(), msD = gl.createRenderbuffer();
+  gl.bindRenderbuffer(gl.RENDERBUFFER, msC); gl.renderbufferStorageMultisample(gl.RENDERBUFFER, samples, HDR.i, w, h);
+  gl.bindRenderbuffer(gl.RENDERBUFFER, msD); gl.renderbufferStorageMultisample(gl.RENDERBUFFER, samples, gl.DEPTH_COMPONENT24, w, h);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, msFB); gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, msC); gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, msD);
+  R.ms = { fb: msFB, del() { gl.deleteFramebuffer(msFB); gl.deleteRenderbuffer(msC); gl.deleteRenderbuffer(msD); } };
+  const mk = (name, W_, H_, mips) => { const t = tex2(W_, H_, HDR, mips||1); const f = fbT(t); R[name] = { t, fb: f, w: W_, h: H_, del() { gl.deleteTexture(t); gl.deleteFramebuffer(f); } }; };
+  mk("copy", w, h); mk("frame", w, h); mk("acA", w, h); mk("acB", w, h);
+  const bw = w>>2||1, bh = h>>2||1; mk("b1", bw, bh); mk("b1t", bw, bh); mk("b2", bw>>1||1, bh>>1||1); mk("b2t", bw>>1||1, bh>>1||1);
+  const mw = w>>1||1, mh = h>>1||1, lv = Math.floor(Math.log2(Math.max(mw,mh)))+1;
+  mk("mirror", mw, mh, lv);
+  const md = gl.createRenderbuffer(); gl.bindRenderbuffer(gl.RENDERBUFFER, md); gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, mw, mh);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, R.mirror.fb); gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, md);
+  const delM = R.mirror.del; R.mirror.del = () => { delM(); gl.deleteRenderbuffer(md); };
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  return true;
+}
+/* Tableau de cartes d'ombre */
+const SHADOW = 2048;
+const shTex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D_ARRAY, shTex);
+gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.DEPTH_COMPONENT24, SHADOW, SHADOW, 4);
+gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_COMPARE_MODE, gl.COMPARE_REF_TO_TEXTURE); gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_COMPARE_FUNC, gl.LEQUAL);
+gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+const shFB = gl.createFramebuffer();
+const dummy = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, dummy); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([128,128,128,255]));
+
+/* ===== Lumières ===== */
+const lights = [
+  { kind: "spot", p: [0,3.38,3.05], t: [0,1.0,1.45], I: [25,23,20], fov: 1.25 },
+  { kind: "spot", p: [0,3.38,-3.05], t: [0,1.0,-1.45], I: [25,23,20], fov: 1.25 },
+  { kind: "dir", d: [.32,.86,.4], I: [.72,.7,.66] },
+  { kind: "dir", d: [-.4,.82,-.36], I: [.72,.7,.66] }
+];
+const uLP = new Float32Array(16), uLC = new Float32Array(12), uLD = new Float32Array(12), uSM = new Float32Array(64);
+function setLights(n) {
+  lights.forEach((l, i) => {
+    let pos, ax, vp;
+    if (l.kind === "spot") {
+      const a = n > 0 ? halton(n,2)*6.283 : 0, r = n > 0 ? Math.sqrt(halton(n,3))*.26 : 0;
+      /* Trois têtes de projecteur simulées par un disque allongé le long du rail */
+      pos = [l.p[0]+Math.cos(a)*r*1.7, l.p[1], l.p[2]+Math.sin(a)*r*.4];
+      const dd = [l.t[0]-pos[0], l.t[1]-pos[1], l.t[2]-pos[2]], len = Math.hypot(...dd); ax = dd.map(v => v/len);
+      vp = m4.mul(m4.persp(l.fov, 1, .4, 7), m4.look(pos, l.t, [0,1,0]));
+      uLP.set([pos[0],pos[1],pos[2],1], i*4);
+    } else {
+      let d = l.d;
+      if (n > 0) { const u = halton(n*2+i,5)*.84+.14, ph = halton(n*2+i,7)*6.283, sq = Math.sqrt(1-u*u); d = [Math.cos(ph)*sq, u, Math.sin(ph)*sq]; }
+      const dl = Math.hypot(...d); d = d.map(v => v/dl);
+      const c = [0,1,0], e = [c[0]+d[0]*8, c[1]+d[1]*8, c[2]+d[2]*8];
+      vp = m4.mul(m4.ortho(-3.6,3.6,-3.6,3.6,.5,16), m4.look(e, c, Math.abs(d[1])>.98?[0,0,1]:[0,1,0]));
+      uLP.set([d[0],d[1],d[2],0], i*4); ax = [0,0,0];
+    }
+    uLC.set(l.I, i*3); uLD.set(ax, i*3); uSM.set(vp, i*16);
+  });
+}
+
+/* ===== Boucle de rendu ===== */
+let scene = null;
+function drawShadows() {
+  gl.useProgram(PS.p); gl.bindFramebuffer(gl.FRAMEBUFFER, shFB); gl.viewport(0, 0, SHADOW, SHADOW);
+  gl.drawBuffers([gl.NONE]); gl.readBuffer(gl.NONE);
+  gl.enable(gl.DEPTH_TEST); gl.depthMask(true); gl.disable(gl.CULL_FACE); gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(1.4, 2.2);
+  for (let i = 0; i < 4; i++) {
+    gl.framebufferTextureLayer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, shTex, 0, i);
+    gl.clear(gl.DEPTH_BUFFER_BIT);
+    gl.uniformMatrix4fv(PS.u.uVP, false, uSM.subarray(i*16, i*16+16));
+    for (const b of scene) { if (b.m.kind !== 0 || b.m.noShadow || b.m.name === "ceil" || b.m.name === "ceilLight" || b.m.name === "wall") continue; bindInstances(b); gl.drawElementsInstanced(gl.TRIANGLES, b.g.count, gl.UNSIGNED_INT, 0, b.n); }
+  }
+  gl.disable(gl.POLYGON_OFFSET_FILL);
+}
+function setCommon(eye, vp, mirror, jit, frameN, rw, rh) {
+  const u = P.u; gl.useProgram(P.p);
+  gl.uniformMatrix4fv(u.uVP, false, vp); gl.uniform3fv(u.uEye, eye);
+  gl.uniform4fv(u.uLP, uLP); gl.uniform3fv(u.uLC, uLC); gl.uniform3fv(u.uLD, uLD); gl.uniformMatrix4fv(u.uSM, false, uSM);
+  gl.uniform1i(u.uMirrorPass, mirror?1:0); gl.uniform2f(u.uRes, rw, rh); gl.uniform2f(u.uJit, jit[0], jit[1]); gl.uniform1f(u.uFrameN, frameN);
+  gl.uniform1i(u.uMap, 0); gl.uniform1i(u.uSh, 1); gl.uniform1i(u.uCopy, 2); gl.uniform1i(u.uMirror, 3);
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D_ARRAY, shTex);
+}
+function setMat(m) {
+  const u = P.u;
+  gl.uniform3fv(u.uBase, m.base); gl.uniform3fv(u.uEm, m.em); gl.uniform1f(u.uRough, m.r); gl.uniform1f(u.uMetal, m.m); gl.uniform1f(u.uCoat, m.coat);
+  gl.uniform1i(u.uKind, m.kind); gl.uniform3fv(u.uAbsorb, m.absorb); gl.uniform1f(u.uFrost, m.frost); gl.uniform1f(u.uMicro, m.micro); gl.uniform1f(u.uFlute, m.flute);
+  const has = !!m.map; gl.uniform1i(u.uHasMap, has?1:0); gl.uniform1i(u.uEmMap, m.emMap?1:0);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, has ? m.map : dummy);
+}
+function drawList(filter) {
+  for (const b of scene) { if (!filter(b.m)) continue; setMat(b.m); bindInstances(b); gl.drawElementsInstanced(gl.TRIANGLES, b.g.count, gl.UNSIGNED_INT, 0, b.n); }
+}
+function renderMirror(V, Pm, eye) {
+  const S = new Float32Array([1,0,0,0, 0,-1,0,0, 0,0,1,0, 0,0,0,1]);
+  const vp = m4.mul(Pm, m4.mul(V, S));
+  gl.bindFramebuffer(gl.FRAMEBUFFER, R.mirror.fb); gl.viewport(0, 0, R.mirror.w, R.mirror.h);
+  gl.clearColor(.3,.3,.3,0); gl.enable(gl.DEPTH_TEST); gl.depthMask(true); gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+  gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, dummy); gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, dummy);
+  setCommon([eye[0],-eye[1],eye[2]], vp, true, [0,0], 0, R.mirror.w, R.mirror.h);
+  gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK); gl.frontFace(gl.CW);
+  drawList(m => m.kind !== 2 && m.name !== "ceil");
+  drawList(m => m.name === "ceil");
+  gl.frontFace(gl.CCW);
+  gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, R.mirror.t); gl.generateMipmap(gl.TEXTURE_2D);
+}
+function renderMain(vp, eye, jit, frameN) {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, R.ms.fb); gl.viewport(0, 0, RW, RH_);
+  gl.clearColor(.1,.1,.1,1); gl.enable(gl.DEPTH_TEST); gl.depthMask(true); gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+  gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, dummy);
+  gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, R.mirror.t);
+  setCommon(eye, vp, false, jit, frameN, RW, RH_);
+  gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK);
+  drawList(m => m.kind !== 1);
+  /* Résolution intermédiaire : le verre réfracte ce qui est déjà dessiné */
+  gl.bindFramebuffer(gl.READ_FRAMEBUFFER, R.ms.fb); gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, R.copy.fb);
+  gl.blitFramebuffer(0,0,RW,RH_,0,0,RW,RH_,gl.COLOR_BUFFER_BIT,gl.NEAREST);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, R.ms.fb);
+  gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, R.copy.t);
+  drawList(m => m.kind === 1);
+  gl.bindFramebuffer(gl.READ_FRAMEBUFFER, R.ms.fb); gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, R.frame.fb);
+  gl.blitFramebuffer(0,0,RW,RH_,0,0,RW,RH_,gl.COLOR_BUFFER_BIT,gl.NEAREST);
+}
+function fsq(fb, w, h) { gl.bindFramebuffer(gl.FRAMEBUFFER, fb); gl.viewport(0,0,w,h); gl.drawArrays(gl.TRIANGLES,0,3); }
+function bind2(unit, t) { gl.activeTexture(gl.TEXTURE0+unit); gl.bindTexture(gl.TEXTURE_2D, t); }
+function post(src) {
+  gl.disable(gl.DEPTH_TEST); gl.depthMask(false); gl.disable(gl.CULL_FACE); gl.bindVertexArray(emptyVAO);
+  gl.useProgram(PD.p); bind2(0, src); gl.uniform1i(PD.u.uT, 0); gl.uniform2f(PD.u.uPx, 1.5/R.b1.w, 1.5/R.b1.h); gl.uniform1f(PD.u.uTh, 1.1); fsq(R.b1.fb, R.b1.w, R.b1.h);
+  gl.useProgram(PB.p); gl.uniform1i(PB.u.uT, 0);
+  const blur = (a, t, s) => { bind2(0, a.t); gl.uniform2f(PB.u.uD, s/a.w, 0); fsq(t.fb, t.w, t.h); bind2(0, t.t); gl.uniform2f(PB.u.uD, 0, s/a.h); fsq(a.fb, a.w, a.h); };
+  blur(R.b1, R.b1t, 1);
+  gl.useProgram(PD.p); bind2(0, R.b1.t); gl.uniform2f(PD.u.uPx, 1/R.b2.w, 1/R.b2.h); gl.uniform1f(PD.u.uTh, 0); fsq(R.b2.fb, R.b2.w, R.b2.h);
+  gl.useProgram(PB.p); blur(R.b2, R.b2t, 1.6); blur(R.b2, R.b2t, 2.6);
+  gl.useProgram(PP.p); bind2(0, src); bind2(1, R.b1.t); bind2(2, R.b2.t);
+  gl.uniform1i(PP.u.uT, 0); gl.uniform1i(PP.u.uB1, 1); gl.uniform1i(PP.u.uB2, 2); gl.uniform1f(PP.u.uExp, 1.0);
+  fsq(null, RW, RH_);
+}
+
+/* ===== Caméra et navigation ===== */
+const VIEWS = {
+  tq:    { t: [.1,.88,1.1], az: .58, po: 1.44, r: 4.75 },
+  face:  { t: [0,.88,1.45], az: 0, po: 1.5, r: 4.3 },
+  rayon: { t: [-.12,1.36,1.45], az: .34, po: 1.5, r: 1.02 },
+  cote:  { t: [.3,.88,0], az: 1.42, po: 1.44, r: 4.7 },
+  dos:   { t: [0,.88,-1.1], az: Math.PI+.5, po: 1.44, r: 4.75 }
+};
+const fitR = v => v.r*((innerWidth/Math.max(1,innerHeight) < .8 && v.r > 2) ? 1.32 : 1);
+const cam = { t: VIEWS.tq.t.slice(), az: VIEWS.tq.az, po: VIEWS.tq.po, r: fitR(VIEWS.tq) };
+const vel = { az: 0, po: 0, r: 0, tx: 0, ty: 0, tz: 0 };
+const FOV = 38*Math.PI/180;
+let tween = null, tour = false, frameN = 0, sampleTarget = 96, moved = true, lastSig = "";
+const reduced = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+function eyeOf(c) {
+  const sp = Math.sin(c.po), cp = Math.cos(c.po);
+  let e = [c.t[0]+c.r*sp*Math.sin(c.az), c.t[1]+c.r*cp, c.t[2]+c.r*sp*Math.cos(c.az)];
+  /* La caméra reste dans le magasin et ne traverse pas la gondole */
+  e[1] = Math.max(.16, Math.min(3.2, e[1])); e[0] = Math.max(-5.2, Math.min(5.2, e[0])); e[2] = Math.max(-8.3, Math.min(8.3, e[2]));
+  const mx = .625+.14, mz = 1.5+.14;
+  if (Math.abs(e[0]) < mx && Math.abs(e[2]) < mz && e[1] < 2.4) {
+    const dx = mx-Math.abs(e[0]), dz = mz-Math.abs(e[2]);
+    if (dx < dz) e[0] = Math.sign(e[0]||1)*mx; else e[2] = Math.sign(e[2]||1)*mz;
+  }
+  return e;
+}
+function clampCam() {
+  cam.po = Math.max(.72, Math.min(1.62, cam.po)); cam.r = Math.max(.42, Math.min(7.2, cam.r));
+  cam.t[0] = Math.max(-1.4, Math.min(1.4, cam.t[0])); cam.t[1] = Math.max(.18, Math.min(2.3, cam.t[1])); cam.t[2] = Math.max(-2.2, Math.min(2.2, cam.t[2]));
+}
+function goView(name, instant) {
+  const v = VIEWS[name]; if (!v) return;
+  document.querySelectorAll("#bar button[data-view]").forEach(b => b.setAttribute("aria-pressed", b.dataset.view === name ? "true" : "false"));
+  setTour(false);
+  let daz = v.az - cam.az; daz = ((daz+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;
+  const end = { t: v.t.slice(), az: cam.az+daz, po: v.po, r: fitR(v) };
+  if (instant || reduced) { cam.t = end.t; cam.az = end.az; cam.po = end.po; cam.r = end.r; vel.az = vel.po = vel.r = vel.tx = vel.ty = vel.tz = 0; tween = null; moved = true; return; }
+  tween = { s: { t: cam.t.slice(), az: cam.az, po: cam.po, r: cam.r }, e: end, a: 0, d: 1.6 };
+}
+function clearPressed() { document.querySelectorAll("#bar button[data-view]").forEach(b => b.setAttribute("aria-pressed", "false")); }
+function setTour(on) { tour = on; document.getElementById("v-tour").setAttribute("aria-pressed", on?"true":"false"); }
+const hint = document.getElementById("hint");
+let touched = false; const dismissHint = () => { if (!touched) { touched = true; hint.classList.add("off"); } }; setTimeout(dismissHint, 9000);
+const pts = new Map(); let pinch = 0, button = 0;
+canvas.addEventListener("pointerdown", e => { canvas.setPointerCapture(e.pointerId); pts.set(e.pointerId, [e.clientX,e.clientY]); button = e.button; canvas.classList.add("drag"); tween = null; setTour(false); clearPressed(); dismissHint(); pinch = 0; });
+canvas.addEventListener("pointermove", e => {
+  if (!pts.has(e.pointerId)) return;
+  const p = pts.get(e.pointerId), dx = e.clientX-p[0], dy = e.clientY-p[1]; pts.set(e.pointerId, [e.clientX,e.clientY]);
+  if (pts.size === 2) {
+    const [a, b] = [...pts.values()], d = Math.hypot(a[0]-b[0], a[1]-b[1]);
+    if (pinch) { cam.r *= pinch/d; vel.r = 0; }
+    pinch = d; panBy(dx*.5, dy*.5); moved = true; return;
+  }
+  if (button === 2 || e.shiftKey) { panBy(dx, dy); }
+  else { const k = .0052; vel.az = -dx*k; vel.po = -dy*k*.7; cam.az += vel.az; cam.po += vel.po; }
+  moved = true;
+});
+const end = e => { pts.delete(e.pointerId); if (!pts.size) canvas.classList.remove("drag"); pinch = 0; };
+canvas.addEventListener("pointerup", end); canvas.addEventListener("pointercancel", end);
+canvas.addEventListener("contextmenu", e => e.preventDefault());
+function panBy(dx, dy) {
+  const s = cam.r*.0012, c = Math.cos(cam.az), n = Math.sin(cam.az);
+  cam.t[0] += -dx*s*c; cam.t[2] += dx*s*n; cam.t[1] += dy*s; moved = true;
+}
+canvas.addEventListener("wheel", e => { e.preventDefault(); dismissHint(); tween = null; clearPressed(); vel.r += e.deltaY*.00042*(e.deltaMode?30:1); moved = true; }, { passive: false });
+canvas.addEventListener("keydown", e => {
+  const m = { ArrowLeft: ["az",-.03], ArrowRight: ["az",.03], ArrowUp: ["po",-.018], ArrowDown: ["po",.018] }[e.key];
+  if (m) { e.preventDefault(); vel[m[0]] += m[1]; dismissHint(); tween = null; clearPressed(); moved = true; }
+  if (e.key === "+" || e.key === "=") { vel.r -= .03; moved = true; } if (e.key === "-") { vel.r += .03; moved = true; }
+});
+canvas.addEventListener("dblclick", e => {
+  /* Double-clic : on rejoint le point visé sur le volume de la gondole */
+  const eye = eyeOf(cam), r = canvas.getBoundingClientRect();
+  const nx = (e.clientX-r.left)/r.width*2-1, ny = 1-(e.clientY-r.top)/r.height*2, tn = Math.tan(FOV/2), asp = r.width/r.height;
+  const f = [cam.t[0]-eye[0], cam.t[1]-eye[1], cam.t[2]-eye[2]]; const fl = Math.hypot(...f); f[0]/=fl;f[1]/=fl;f[2]/=fl;
+  let rx = [-f[2], 0, f[0]]; const rl = Math.hypot(...rx); rx = rx.map(v => v/rl);
+  const up = [rx[1]*f[2]-rx[2]*f[1], rx[2]*f[0]-rx[0]*f[2], rx[0]*f[1]-rx[1]*f[0]];
+  const d = [f[0]+rx[0]*nx*tn*asp+up[0]*ny*tn, f[1]+rx[1]*nx*tn*asp+up[1]*ny*tn, f[2]+rx[2]*nx*tn*asp+up[2]*ny*tn];
+  let best = null;
+  const planes = [[2,1.5],[2,-1.5],[0,.625],[0,-.625]];
+  for (const [ax, val] of planes) { const t = (val-eye[ax])/d[ax]; if (t <= .05) continue; const h = [eye[0]+d[0]*t, eye[1]+d[1]*t, eye[2]+d[2]*t]; if (Math.abs(h[0]) <= .63 && Math.abs(h[2]) <= 1.51 && h[1] >= .1 && h[1] <= 2.25 && (!best || t < best.t)) best = { t, h }; }
+  if (!best) return;
+  dismissHint(); clearPressed(); setTour(false);
+  const clampR = Math.max(.6, Math.min(cam.r*.55, 1.15));
+  tween = { s: { t: cam.t.slice(), az: cam.az, po: cam.po, r: cam.r }, e: { t: best.h, az: cam.az, po: Math.min(cam.po, 1.54), r: clampR }, a: 0, d: 1.1 };
+});
+document.querySelectorAll("#bar button[data-view]").forEach(b => b.addEventListener("click", () => { dismissHint(); goView(b.dataset.view); }));
+document.getElementById("v-tour").addEventListener("click", () => { dismissHint(); tween = null; clearPressed(); setTour(!tour); moved = true; });
+window.addEventListener("resize", () => { moved = true; });
+
+let lastT = 0, slowFrames = 0, fastCount = 0, shadowState = -1;
+const meter = document.getElementById("meter");
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(.05, (now-lastT)/1000||.016), raw = now-lastT; lastT = now;
+  if (allocate()) moved = true;
+  /* Animation de caméra */
+  if (tween) {
+    tween.a = Math.min(1, tween.a+dt/tween.d);
+    const k = tween.a, q = k*k*k*(k*(k*6-15)+10);
+    for (let i = 0; i < 3; i++) cam.t[i] = tween.s.t[i]+(tween.e.t[i]-tween.s.t[i])*q;
+    cam.az = tween.s.az+(tween.e.az-tween.s.az)*q; cam.po = tween.s.po+(tween.e.po-tween.s.po)*q; cam.r = tween.s.r+(tween.e.r-tween.s.r)*q;
+    if (k >= 1) tween = null; moved = true;
+  }
+  if (tour) { cam.az += dt*.16; moved = true; }
+  const dragging = pts.size > 0;
+  if (!dragging) {
+    if (Math.abs(vel.az)+Math.abs(vel.po) > 1e-4) { cam.az += vel.az; cam.po += vel.po; const dm = Math.exp(-dt*7); vel.az *= dm; vel.po *= dm; moved = true; }
+    else { vel.az = 0; vel.po = 0; }
+  } else { vel.az *= .5; vel.po *= .5; }
+  if (Math.abs(vel.r) > 1e-4) { cam.r *= 1+vel.r; vel.r *= Math.exp(-dt*9); moved = true; } else vel.r = 0;
+  clampCam();
+
+  /* Mouvement : cadence fluide. Arrêt : affinage progressif par accumulation. */
+  if (moved) {
+    if (raw > 45) { slowFrames++; fastCount = 0; } else { fastCount++; slowFrames = Math.max(0, slowFrames-1); }
+    if (slowFrames > 14 && quality > .55) { quality = Math.max(.55, quality-.2); slowFrames = 0; allocate(); }
+    frameN = 0;
+  } else if (frameN > sampleTarget) { return; }
+
+  const eye = eyeOf(cam), asp = RW/RH_, n = .08, f = 40;
+  const fd = Math.hypot(eye[0]-cam.t[0], eye[1]-cam.t[1], eye[2]-cam.t[2]);
+  let V, Pm, jit = [0,0];
+  const base = m4.look(eye, cam.t, [0,1,0]);
+  const Pbase = m4.persp(FOV, asp, n, f);
+  if (moved || frameN === 0) {
+    if (shadowState !== 0) { setLights(0); drawShadows(); shadowState = 0; }
+    V = base; Pm = Pbase;
+    renderMirror(V, Pm, eye);
+    renderMain(m4.mul(Pm, V), eye, jit, 0);
+    gl.disable(gl.DEPTH_TEST); gl.depthMask(false); gl.disable(gl.CULL_FACE); gl.bindVertexArray(emptyVAO);
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, R.frame.fb); gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, R.acA.fb); gl.blitFramebuffer(0,0,RW,RH_,0,0,RW,RH_,gl.COLOR_BUFFER_BIT,gl.NEAREST);
+    post(R.frame.t);
+    meter.classList.add("done"); meter.style.transform = "scaleX(0)";
+    moved = false; frameN = 1; return;
+  }
+  /* Échantillon : lumières déplacées, objectif réel (profondeur de champ), sous-pixel */
+  setLights(frameN); drawShadows(); shadowState = 1;
+  const ap = (fd < 1.5 ? .0034 : .0062);
+  const ang = halton(frameN,2)*6.283, rad = Math.sqrt(halton(frameN,3))*ap;
+  const fw = [cam.t[0]-eye[0], cam.t[1]-eye[1], cam.t[2]-eye[2]].map(v => v/fd);
+  let rx = [-fw[2], 0, fw[0]]; const rl = Math.hypot(...rx)||1; rx = rx.map(v => v/rl);
+  const up = [rx[1]*fw[2]-rx[2]*fw[1], rx[2]*fw[0]-rx[0]*fw[2], rx[0]*fw[1]-rx[1]*fw[0]];
+  const ax = Math.cos(ang)*rad, ay = Math.sin(ang)*rad;
+  const e2 = [eye[0]+rx[0]*ax+up[0]*ay, eye[1]+rx[1]*ax+up[1]*ay, eye[2]+rx[2]*ax+up[2]*ay];
+  const c2 = [cam.t[0]+rx[0]*ax+up[0]*ay, cam.t[1]+rx[1]*ax+up[1]*ay, cam.t[2]+rx[2]*ax+up[2]*ay];
+  V = m4.look(e2, c2, [0,1,0]);
+  const top = n*Math.tan(FOV/2), wn = top*asp;
+  const sx = (halton(frameN,5)-.5)*2*wn/RW*1.6, sy = (halton(frameN,7)-.5)*2*top/RH_*1.6;
+  const ox = -ax*n/fd+sx, oy = -ay*n/fd+sy;
+  Pm = m4.frustum(-wn+ox, wn+ox, -top+oy, top+oy, n, f);
+  jit = [(halton(frameN,11)-.5)*2, (halton(frameN,13)-.5)*2];
+  if (frameN % 24 === 0) renderMirror(base, Pbase, eye);
+  renderMain(m4.mul(Pm, V), e2, jit, frameN);
+  gl.disable(gl.DEPTH_TEST); gl.depthMask(false); gl.disable(gl.CULL_FACE); gl.bindVertexArray(emptyVAO);
+  gl.useProgram(PA.p); bind2(0, R.acA.t); bind2(1, R.frame.t); gl.uniform1i(PA.u.uA, 0); gl.uniform1i(PA.u.uB, 1);
+  gl.uniform1f(PA.u.uK, 1/(frameN+2.5));
+  fsq(R.acB.fb, RW, RH_);
+  const tmp = R.acA; R.acA = R.acB; R.acB = tmp;
+  post(R.acA.t);
+  meter.classList.remove("done"); meter.style.transform = `scaleX(${Math.min(1, frameN/sampleTarget)})`;
+  frameN++;
+  if (frameN > sampleTarget) meter.classList.add("done");
+}
+
+/* ===== Démarrage ===== */
+function start() {
+  try {
+    scene = buildWorld();
+    gl.bindVertexArray(null);
+    allocate(); setLights(0);
+    const ld = document.getElementById("load"); ld.classList.add("off"); setTimeout(() => { ld.hidden = true; }, 900);
+    window.__gondole = { ready: true, view: goView, samples: () => frameN, setTarget: v => { sampleTarget = v; }, cam };
+    requestAnimationFrame(t => { lastT = t; frame(t); });
+  } catch (e) { console.error(e); fail("La scène n'a pas pu être construite sur cet appareil. Essayez un autre navigateur."); window.__gondole = { error: String(e) }; }
+}
+const fontsReady = (document.fonts && document.fonts.load) ? Promise.all([
+  document.fonts.load('400 40px "Italiana"', "ONDÉE"), document.fonts.load('400 20px "Jost"', "Soin"), document.fonts.load('500 20px "Jost"', "Soin")
+]) : Promise.resolve();
+Promise.race([fontsReady, new Promise(r => setTimeout(r, 2500))]).catch(() => {}).then(() => setTimeout(start, 30));
+})();
+</script>
+</body>
+</html>
