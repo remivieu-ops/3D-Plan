@@ -3,29 +3,29 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0f2a2b">
+<meta name="theme-color" content="#141416">
 <meta name="description" content="Tête de gondole de soins de beauté en 3D, à explorer sous tous les angles.">
 <style>*,*::before,*::after{box-sizing:border-box}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font-size:14px}[hidden]{display:none!important}</style>
-<title>Gondole Ondée</title>
+<title>Gondole Beauté</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Italiana&family=Jost:wght@300;400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=Jost:wght@300;400;500;600&display=swap">
 <style>
 /* Plein cadre : la scène 3D occupe tout, l'interface flotte aux bords comme une signalétique de magasin. */
 :root {
   --ink: #f3f1ea;
-  --ink-soft: #c9d3cd;
-  --petrol: #0f2a2b;
-  --glass: rgba(14, 34, 35, .62);
-  --glass-line: rgba(233, 240, 234, .18);
-  --brass: #d9b98a;
-  --display: "Italiana", "Didot", "Bodoni 72", Georgia, serif;
+  --ink-soft: #d2d2d2;
+  --night: #141416;
+  --glass: rgba(20, 20, 22, .62);
+  --glass-line: rgba(240, 240, 240, .18);
+  --crimson: #b5121b;
+  --display: "Bodoni Moda", "Didot", "Bodoni 72", Georgia, serif;
   --body: "Jost", "Avenir Next", "Segoe UI", system-ui, sans-serif;
   color-scheme: dark;
 }
 html, body { height: 100%; overflow: hidden; overscroll-behavior: none; -webkit-text-size-adjust: 100%; }
 body {
-  background: var(--petrol); color: var(--ink); font-family: var(--body);
+  background: var(--night); color: var(--ink); font-family: var(--body);
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   -webkit-font-smoothing: antialiased;
@@ -56,12 +56,12 @@ body {
   padding: 10px 13px; min-height: 36px; cursor: pointer; transition: background .15s, color .15s;
 }
 #bar button:hover { background: rgba(233, 240, 234, .13); }
-#bar button[aria-pressed="true"] { background: var(--brass); color: #1b1712; }
-#bar button:focus-visible, #scene:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+#bar button[aria-pressed="true"] { background: var(--crimson); color: #fff; }
+#bar button:focus-visible, #scene:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 #bar .sep { width: 1px; background: var(--glass-line); margin: 5px 4px; }
-#meter { position: fixed; z-index: 2; left: 0; bottom: 0; height: 2px; width: 100%; background: var(--brass); transform-origin: 0 50%; transform: scaleX(0); transition: opacity .6s; opacity: .9; }
+#meter { position: fixed; z-index: 2; left: 0; bottom: 0; height: 2px; width: 100%; background: var(--crimson); transform-origin: 0 50%; transform: scaleX(0); transition: opacity .6s; opacity: .9; }
 #meter.done { opacity: 0; }
-#load { position: fixed; inset: 0; z-index: 3; display: grid; place-items: center; background: var(--petrol); text-align: center; padding: 24px; transition: opacity .7s; }
+#load { position: fixed; inset: 0; z-index: 3; display: grid; place-items: center; background: var(--night); text-align: center; padding: 24px; transition: opacity .7s; }
 #load.off { opacity: 0; pointer-events: none; }
 #load b { display: block; font: 400 44px/1 var(--display); letter-spacing: .12em; margin-bottom: 10px; }
 #load span { font-size: 14px; color: var(--ink-soft); line-height: 1.45; display: block; max-width: 46ch; }
@@ -89,8 +89,8 @@ body {
 <body>
 <canvas id="scene" tabindex="0" aria-label="Scène 3D d'une tête de gondole de soins de beauté. Glissez pour tourner autour, les flèches du clavier fonctionnent aussi."></canvas>
 <header id="head" class="chip">
-  <h1>Tête de gondole Ondée</h1>
-  <p>Soins de beauté. Marque et prix fictifs.</p>
+  <h1>Tête de gondole Beauté</h1>
+  <p>Soins de beauté. Produits et prix fictifs.</p>
 </header>
 <div id="dock">
   <div id="hint" class="chip">Glissez pour tourner. Molette ou pincement pour zoomer. Double-clic pour vous approcher d'un rayon.</div>
@@ -105,7 +105,7 @@ body {
   </nav>
 </div>
 <div id="meter" aria-hidden="true"></div>
-<div id="load"><div><b>ONDÉE</b><span id="load-msg">Mise en rayon des produits…</span></div></div>
+<div id="load"><div><b>BEAUTÉ</b><span id="load-msg">Mise en rayon des produits…</span></div></div>
 
 <script>
 "use strict";
@@ -168,7 +168,7 @@ void main(){ vec4 w=aM*vec4(aP,1.); vW=w.xyz; vN=mat3(aM)*aN; vUV=aUV; gl_Positi
 
 const FS_MAIN = `
 in vec3 vW; in vec3 vN; in vec2 vUV; layout(location=0) out vec4 O;
-uniform vec3 uEye, uBase, uEm; uniform float uRough, uMetal, uCoat, uFrost; uniform int uKind; uniform bool uHasMap, uEmMap, uMirrorPass;
+uniform vec3 uEye, uBase, uEm; uniform float uRough, uMetal, uCoat, uFrost; uniform int uKind; uniform bool uHasMap, uEmMap, uMirrorPass, uCut;
 uniform vec3 uAbsorb; uniform float uTime; uniform vec2 uRes, uJit; uniform float uMicro, uFlute;
 uniform sampler2D uMap, uCopy, uMirror; uniform sampler2DArrayShadow uSh;
 uniform mat4 uSM[4]; uniform vec4 uLP[4]; uniform vec3 uLC[4], uLD[4]; uniform float uFrameN;
@@ -234,7 +234,7 @@ void main(){
   vec3 N=Ng;
   if(uFlute>0.){ float s=vUV.x*uFlute*6.2832; N=normalize(N+ (abs(N.z)>abs(N.x)?vec3(1,0,0):vec3(0,0,1))*sin(s)*.55); }
   float rough=uRough; vec3 base=uBase; vec4 tx=vec4(1.);
-  if(uHasMap&&!uEmMap){ tx=texture(uMap,vUV); base*=tx.rgb; }
+  if(uHasMap&&!uEmMap){ tx=texture(uMap,vUV); if(uCut){ if(tx.a<.02) discard; } else base*=tx.rgb; }
   if(uMicro>0.){ vec3 q=vW*vec3(900.); N=normalize(N+uMicro*(vec3(hash(q.xy),hash(q.yz),hash(q.zx))-.5)); }
   vec3 em=uEm; if(uEmMap) em*=texture(uMap,vUV).rgb;
   /* Sol poli : dalles, joints, poussière de marbre */
@@ -257,7 +257,7 @@ void main(){
   if(inside>.5){
     vec3 Lv=sp-vW; float d=length(Lv); vec3 L=Lv/max(d,1e-4);
     float E=.5/(d+.055)*smoothstep(.015,.075,d);
-    vec3 led=vec3(1.,.9,.76)*E;
+    vec3 led=vec3(1.,.94,.86)*E;
     float wrap=clamp(dot(N,L)*.82+.18,0.,1.);
     Lo+=dif/PI*led*wrap*PI*.62;
     Lo+=lobe(N,V,L,led*.55,vec3(0.),F0,max(rough,.28),0.);
@@ -326,7 +326,7 @@ void main(){
     for(int i=0;i<4;i++){ vec3 L; vec3 rad=uLC[i]; if(uLP[i].w>.5){ vec3 Lv=uLP[i].xyz-vW; float d2=dot(Lv,Lv); L=Lv/sqrt(d2); rad*=smoothstep(.7,.9,dot(-L,uLD[i]))/d2; } else L=uLP[i].xyz; sum+=lobe(N,V,L,rad,vec3(0.),vec3(.04),rough,0.); }
     col=sum+em;
   }
-  float a_=uMirrorPass?clamp(vW.y/2.4,0.,1.):1.;
+  float a_=uMirrorPass?clamp(vW.y/2.4,0.,1.):(uCut?tx.a:1.);
   O=vec4(col,a_);
 }`;
 const VS_SHADOW = `layout(location=0) in vec3 aP; layout(location=3) in mat4 aM; uniform mat4 uVP; void main(){ gl_Position=uVP*aM*vec4(aP,1.); }`;
@@ -434,7 +434,7 @@ function tubeBody(r, y0, h, seg = 28) {
 }
 
 /* ===== Textures dessinées ===== */
-const FD = '"Italiana","Didot","Bodoni 72",Georgia,serif', FB = '"Jost","Avenir Next","Segoe UI",Arial,sans-serif';
+const FD = '"Bodoni Moda","Didot","Bodoni 72",Georgia,serif', FB = '"Jost","Avenir Next","Segoe UI",Arial,sans-serif';
 function texFrom(cv, repeat = false) {
   const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -455,33 +455,38 @@ function T(x, s, cx, cy, px, o = {}) {
   if (o.max) { const m = x.measureText(s).width; if (m > o.max) { x.translate(cx, cy); x.scale(o.max/m, 1); x.fillText(s, 0, 0); x.restore(); return; } }
   x.fillText(s, cx, cy); x.restore();
 }
-const ink = { brume: "#1b3a38", rosee: "#5b2f2b", nuit: "#e6c9a0", perle: "#2a3a38" };
 function bars(x, X, Y, W, H, col) { x.fillStyle = col; let i = X, s = 7; while (i < X+W) { s = (s*31+11)%97; const b = 1+s%3; x.fillRect(i, Y, b, H); i += b+1+(s>>3)%3; } }
 /* Corps complet : le centre du canevas fait face au client */
 function bodyLabel(w, h, bg, col, gamme, name, sub, vol, opt = {}) {
-  return draw(w, h, (x) => {
+  return draw(w, h, x => {
     x.fillStyle = bg; x.fillRect(0, 0, w, h);
-    const cx = w/2, span = opt.span||w*.3;
-    T(x, "ONDÉE", cx, h*(opt.top||.3), h*(opt.brand||.1), { f: FD, c: col, ls: h*.018, max: span });
-    x.fillStyle = col; x.fillRect(cx-span*.11, h*((opt.top||.3)+.08), span*.22, Math.max(1, h*.0028));
-    T(x, gamme.toUpperCase(), cx, h*((opt.top||.3)+.135), h*.024, { c: col, w: 500, ls: h*.007, max: span });
-    T(x, name, cx, h*((opt.top||.3)+.205), h*.05, { f: FD, c: col, max: span });
-    T(x, sub, cx, h*((opt.top||.3)+.27), h*.024, { c: col, w: 400, max: span });
+    const cx = w/2, span = opt.span||w*.3, top = opt.top||.3;
+    T(x, name, cx, h*top, h*.074, { f: FD, c: col, max: span });
+    x.fillStyle = col; x.fillRect(cx-span*.09, h*(top+.07), span*.18, Math.max(1, h*.0026));
+    T(x, gamme.toUpperCase(), cx, h*(top+.115), h*.024, { c: col, w: 500, ls: h*.008, max: span });
+    T(x, sub, cx, h*(top+.17), h*.026, { c: col, max: span });
     T(x, vol, cx, h*.095, h*.025, { c: col, w: 500, ls: 1, max: span });
     x.globalAlpha = .75;
     const b = w*.74; for (let i = 0; i < 6; i++) { x.fillStyle = col; x.fillRect(b, h*(.32+i*.04), w*.15*(i%3===2?.6:1), h*.012); }
     bars(x, b, h*.68, w*.12, h*.09, col);
   });
 }
-function paperLabel(w, h, bg, col, gamme, name, sub, vol, foil) {
+/* Encre sérigraphiée directement sur le verre : seul le tracé est visible */
+function printLabel(w, h, gamme, name, sub, vol) {
   return draw(w, h, x => {
-    x.fillStyle = bg; x.fillRect(0, 0, w, h);
-    x.strokeStyle = foil||col; x.lineWidth = Math.max(1,h*.012); x.strokeRect(w*.035, h*.05, w*.93, h*.9);
-    T(x, "ONDÉE", w/2, h*.26, h*.17, { f: FD, c: col, ls: h*.03, max: w*.82 });
-    T(x, gamme.toUpperCase(), w/2, h*.43, h*.055, { c: foil||col, w: 500, ls: h*.015, max: w*.84 });
-    T(x, name, w/2, h*.59, h*.095, { f: FD, c: col, max: w*.86 });
-    T(x, sub, w/2, h*.73, h*.05, { c: col, max: w*.84 });
-    T(x, vol, w/2, h*.86, h*.05, { c: col, w: 500, max: w*.84 });
+    const c = "#fff";
+    if (w/h > 3) {
+      T(x, name, w/2, h*.32, h*.38, { f: FD, c, w: 500, max: w*.86 });
+      T(x, sub, w/2, h*.68, h*.16, { c, w: 500, max: w*.8 });
+      T(x, vol, w/2, h*.89, h*.13, { c, w: 500, max: w*.5 });
+      return;
+    }
+    const k = Math.min(h, w*.62);
+    T(x, name, w/2, h*.3, k*.19, { f: FD, c, w: 500, max: w*.92 });
+    x.fillStyle = c; x.fillRect(w*.43, h*.44, w*.14, Math.max(2, h*.008));
+    T(x, gamme.toUpperCase(), w/2, h*.55, k*.075, { c, w: 500, ls: k*.022, max: w*.84 });
+    T(x, sub, w/2, h*.69, k*.08, { c, w: 500, max: w*.88 });
+    T(x, vol, w/2, h*.86, k*.08, { c, w: 500, max: w*.7 });
   });
 }
 /* Étui carton : 80 % face, 20 % tranche */
@@ -489,40 +494,27 @@ function carton(w, h, bg, col, foil, gamme, name, sub, vol) {
   return draw(w, h, x => {
     x.fillStyle = bg; x.fillRect(0, 0, w, h);
     const W = w*.8;
-    x.fillStyle = foil; x.fillRect(0, h*.905, W, h*.012);
-    /* ondes concentriques gaufrées */
-    x.strokeStyle = foil; x.globalAlpha = .28; x.lineWidth = Math.max(1, h*.0025);
-    for (let i = 1; i < 8; i++) { x.beginPath(); x.ellipse(W*.5, h*.82, W*.075*i, W*.022*i, 0, 0, Math.PI*2); x.stroke(); }
-    x.globalAlpha = 1;
-    T(x, "ONDÉE", W/2, h*.22, W*.17, { f: FD, c: col, ls: W*.022, max: W*.84 });
-    T(x, gamme.toUpperCase(), W/2, h*.31, W*.038, { c: foil, w: 500, ls: W*.012, max: W*.86 });
-    T(x, name, W/2, h*.45, W*.095, { f: FD, c: col, max: W*.86 });
-    T(x, sub, W/2, h*.53, W*.042, { c: col, max: W*.84 });
-    T(x, vol, W/2, h*.955, W*.036, { c: col, w: 500, max: W*.8 });
-    /* tranche */
-    x.fillStyle = "rgba(0,0,0,.04)"; x.fillRect(W, 0, w-W, h*.97);
-    x.save(); x.translate(W+(w-W)/2, h*.45); x.rotate(-Math.PI/2); T(x, "ONDÉE  ·  "+name, 0, 0, (w-W)*.26, { f: FD, c: col, ls: 2, max: h*.72 }); x.restore();
+    T(x, name.split(" ")[0], W/2, h*.2, W*.135, { f: FD, c: col, max: W*.84 });
+    T(x, name.split(" ").slice(1).join(" "), W/2, h*.28, W*.135, { f: FD, c: col, max: W*.84 });
+    x.fillStyle = foil; x.fillRect(W*.42, h*.345, W*.16, Math.max(1, h*.003));
+    T(x, gamme.toUpperCase(), W/2, h*.39, W*.04, { c: foil, w: 500, ls: W*.014, max: W*.86 });
+    T(x, sub, W/2, h*.46, W*.047, { c: col, max: W*.86 });
+    x.fillStyle = foil; x.fillRect(0, h*.84, W, h*.016);
+    T(x, vol, W/2, h*.92, W*.04, { c: col, w: 500, max: W*.8 });
+    x.fillStyle = "rgba(0,0,0,.05)"; x.fillRect(W, 0, w-W, h*.97);
+    x.save(); x.translate(W+(w-W)/2, h*.42); x.rotate(-Math.PI/2); T(x, name, 0, 0, (w-W)*.3, { f: FD, c: col, ls: 1, max: h*.68 }); x.restore();
     bars(x, W+(w-W)*.25, h*.84, (w-W)*.5, h*.08, col);
   });
 }
 function priceTag(price, unit, note, promo) {
   return draw(256, 128, x => {
-    x.fillStyle = promo ? "#d9b98a" : "#f7f5ef"; x.fillRect(0, 0, 256, 128);
+    x.fillStyle = promo ? "#f2d6d6" : "#f7f5ef"; x.fillRect(0, 0, 256, 128);
     T(x, price, 12, 54, 54, { a: "left", w: 500, c: "#111", f: FB });
     T(x, note, 12, 96, 19, { a: "left", c: "#333", max: 150 });
     T(x, unit, 12, 116, 15, { a: "left", c: "#555", max: 150 });
     bars(x, 172, 68, 72, 44, "#111");
   });
 }
-function woodTex() { return draw(1024, 512, (x, w, h) => {
-  x.fillStyle = "#b08d62"; x.fillRect(0, 0, w, h);
-  for (let i = 0; i < 620; i++) {
-    const y = rnd()*h, a = .03+rnd()*.08; x.strokeStyle = rnd()>.5 ? `rgba(84,56,30,${a})` : `rgba(226,196,152,${a})`;
-    x.lineWidth = .6+rnd()*2.2; x.beginPath(); x.moveTo(0, y);
-    const c = rnd()*14-7; x.bezierCurveTo(w*.3, y+c, w*.6, y-c, w, y); x.stroke();
-  }
-  for (let i = 0; i < 500; i++) { x.fillStyle = `rgba(60,38,20,${.08+rnd()*.14})`; x.fillRect(rnd()*w, rnd()*h, 10+rnd()*50, 1); }
-}, true); }
 function floorTex() { return draw(1024, 1024, (x, w, h) => {
   x.fillStyle = "#7f7f7c"; x.fillRect(0, 0, w, h);
   for (let i = 0; i < 26000; i++) { const v = 90+rnd()*80|0; x.fillStyle = `rgba(${v},${v},${v-3},.5)`; x.fillRect(rnd()*w, rnd()*h, 1+rnd()*3, 1+rnd()*3); }
@@ -537,22 +529,17 @@ function fronton(w, h, lines) { return draw(w, h, x => {
   x.fillStyle = "#0a0c0c"; x.fillRect(0, 0, w, h);
   lines(x);
 }); }
-/* Caisson lumineux : une ondée sur une vitre */
+/* Caisson lumineux */
 function lightbox() { return draw(1400, 512, (x, w, h) => {
-  const g = x.createLinearGradient(0, 0, w, h); g.addColorStop(0, "#8fb4b0"); g.addColorStop(.55, "#cbdcd2"); g.addColorStop(1, "#f0dfd2"); x.fillStyle = g; x.fillRect(0, 0, w, h);
-  for (let i = 0; i < 620; i++) {
-    const px = rnd()*w, py = rnd()*h, r = 1.2+rnd()*rnd()*12;
-    const rg = x.createRadialGradient(px-r*.3, py-r*.4, r*.1, px, py, r);
-    rg.addColorStop(0, "rgba(255,255,255,.75)"); rg.addColorStop(.65, "rgba(70,110,110,.16)"); rg.addColorStop(1, "rgba(25,60,60,.32)");
-    x.fillStyle = rg; x.beginPath(); x.ellipse(px, py, r, r*1.14, 0, 0, 7); x.fill();
-  }
-  x.fillStyle = "rgba(15,42,43,.86)"; x.fillRect(0, h*.62, w, h*.38);
-  T(x, "L'eau de pluie, filtrée sur basalte.", w/2, h*.74, 58, { f: FD, c: "#f3f1ea", max: w*.86 });
-  T(x, "Nouvelle gamme Brume. Hydrate 48 h, sans parfum ajouté.", w/2, h*.88, 28, { c: "#d9dfd8", ls: 1, max: w*.8 });
+  const g = x.createLinearGradient(0, 0, w, h); g.addColorStop(0, "#f6f3ee"); g.addColorStop(.6, "#ece6df"); g.addColorStop(1, "#d9c9c2"); x.fillStyle = g; x.fillRect(0, 0, w, h);
+  T(x, "Équilibre", w/2, h*.31, 150, { f: FD, c: "#a80f1a", w: 500, max: w*.7 });
+  x.fillStyle = "rgba(20,20,22,.9)"; x.fillRect(0, h*.62, w, h*.38);
+  T(x, "L'équilibre de la peau, jour après jour.", w/2, h*.74, 58, { f: FD, c: "#f6f3ee", max: w*.86 });
+  T(x, "Concentrés, crèmes et lotions pour le visage et le corps.", w/2, h*.88, 28, { c: "#dcdcdc", ls: 1, max: w*.8 });
 }); }
 function facingsTex() { return draw(1024, 512, (x, w, h) => {
   x.fillStyle = "#23282a"; x.fillRect(0, 0, w, h);
-  const pal = ["#dcd6cb","#c1a98c","#6e8583","#b45f58","#e8e2d7","#39474f","#a9c4bb","#d9a9a0","#8c5a3e","#efe9dc","#2c1e33","#c9b16d"];
+  const pal = ["#e4e2dd","#b9babb","#55585b","#a8323a","#efedE8","#2a2b2e","#d6d4cf","#c96a70","#7f8082","#f4f2ee","#1c1c1e","#9c9d9f"];
   for (let t = 0; t < 4; t++) {
     const y0 = t*h/4;
     x.fillStyle = "#3a3d3b"; x.fillRect(0, y0, w, h*.018);
@@ -563,44 +550,43 @@ function facingsTex() { return draw(1024, 512, (x, w, h) => {
 
 /* ===== Matériaux, produits, instanciation ===== */
 const mats = {}, prods = {}, batches = new Map();
-const mat = (name, o) => (mats[name] = Object.assign({ base: [1,1,1], r: .5, m: 0, em: [0,0,0], map: null, emMap: false, coat: 0, kind: 0, absorb: [0,0,0], frost: 0, micro: 0, flute: 0, noShadow: false }, o, { name }));
+const mat = (name, o) => (mats[name] = Object.assign({ base: [1,1,1], r: .5, m: 0, em: [0,0,0], map: null, emMap: false, coat: 0, kind: 0, absorb: [0,0,0], frost: 0, micro: 0, flute: 0, noShadow: false, cut: false }, o, { name }));
 const prod = (name, parts) => { prods[name] = parts; };
 const part = (g, m, x = 0, y = 0, z = 0, ry = 0) => ({ g, m, t: m4.trs(x, y, z, ry) });
 function put(name, M) { for (const p of prods[name]) { const k = p.g; const key = k.__id || (k.__id = Math.random()); const kk = key+"|"+p.m.name; if (!batches.has(kk)) batches.set(kk, { g: p.g, m: p.m, list: [] }); batches.get(kk).list.push(m4.mul(M, p.t)); } }
 const putRaw = (g, m, M) => { const key = g.__id || (g.__id = Math.random()); const kk = key+"|"+m.name; if (!batches.has(kk)) batches.set(kk, { g, m, list: [] }); batches.get(kk).list.push(M); };
 
 function buildWorld() {
-  const BRASS = hex(0xc9a877), PETROL = hex(0x153a3b), BRUME = hex(0xa9c4bb), ROSEE = hex(0xe7c4b8), PERLE = hex(0xf1eee6), NUIT = hex(0x2c1e33);
+  const SILVER = hex(0xc6c8ca), RED = hex(0xa80f1a), PEARL = hex(0xf1eee8);
   /* Métaux, plastiques */
-  mat("brass", { base: BRASS, r: .3, m: 1 });
-  mat("gold", { base: hex(0xdcbc86), r: .2, m: 1 });
+  mat("brass", { base: SILVER, r: .26, m: 1 });
+  mat("gold", { base: hex(0xdcdddf), r: .16, m: 1 });
   mat("chrome", { base: hex(0xd8d9d8), r: .12, m: 1 });
-  mat("copper", { base: hex(0xc58a5e), r: .24, m: 1 });
+  mat("copper", { base: hex(0x5a5d60), r: .24, m: 1 });
   mat("blackP", { base: hex(0x171918), r: .34, coat: .3 });
-  mat("whiteP", { base: PERLE, r: .36, coat: .25 });
-  mat("rubber", { base: hex(0x2a211f), r: .55 });
+  mat("whiteP", { base: PEARL, r: .36, coat: .25 });
+  mat("rubber", { base: hex(0x1b1b1c), r: .45 });
   mat("rubberRose", { base: hex(0xc99a8b), r: .5 });
   mat("frostLid", { base: hex(0xe9ebe6), r: .3, coat: .4 });
   mat("creamW", { base: hex(0xf5efe3), r: .32 });
-  mat("creamR", { base: hex(0xf1d6c9), r: .32 });
+  mat("creamR", { base: hex(0xf5efe6), r: .32 });
   /* Verres */
-  mat("glassAmber", { kind: 1, base: [1,1,1], r: .06, absorb: [.32,.75,1.6] });
+  mat("glassAmber", { kind: 1, base: [1,1,1], r: .05, absorb: [.3,2.8,2.5] });
   mat("glassClear", { kind: 1, base: [1,1,1], r: .05, absorb: [.05,.03,.04] });
   mat("glassFrost", { kind: 1, base: hex(0xeaf0ec), r: .34, absorb: [.14,.08,.1], frost: .018 });
-  mat("glassRose", { kind: 1, base: hex(0xf3d9cf), r: .32, absorb: [.06,.17,.2], frost: .016 });
-  mat("glassNuit", { kind: 1, base: hex(0x3a2340), r: .08, absorb: [.9,1.5,1.0] });
+  mat("glassRose", { kind: 1, base: hex(0xb3202a), r: .3, absorb: [.2,1.5,1.4], frost: .014 });
+  mat("glassNuit", { kind: 1, base: hex(0x1a1a1c), r: .06, absorb: [2.2,2.2,2.2] });
   /* Liquides (vus à travers le verre) */
-  mat("oilAmber", { base: hex(0xcf8a2c), r: .15, coat: .6 });
-  mat("waterPale", { base: hex(0xcfe2db), r: .1, coat: .6 });
-  mat("waterRose", { base: hex(0xf0c6b7), r: .12, coat: .6 });
-  mat("oilNuit", { base: hex(0x60314a), r: .15, coat: .6 });
+  mat("oilAmber", { base: hex(0xc2141f), r: .15, coat: .6 });
+  mat("waterPale", { base: hex(0xe6ecea), r: .1, coat: .6 });
+  mat("waterRose", { base: hex(0xf2c9c8), r: .12, coat: .6 });
+  mat("oilNuit", { base: hex(0x161617), r: .15, coat: .6 });
   /* Gondole */
-  const wood = woodTex();
-  mat("oak", { map: wood, r: .42, coat: .25 });
-  mat("oakEdge", { map: wood, base: [.86,.84,.8], r: .36, coat: .3 });
-  mat("petrol", { base: PETROL, r: .24, coat: .55 });
-  mat("petrolFlute", { base: PETROL, r: .3, coat: .3, flute: 42 });
-  mat("plinth", { base: hex(0x0f2a2b), r: .2, coat: .7 });
+  mat("oak", { base: PEARL, r: .2, coat: .6 });
+  mat("oakEdge", { base: PEARL, r: .2, coat: .6 });
+  mat("petrol", { base: PEARL, r: .2, coat: .65 });
+  mat("petrolFlute", { base: hex(0x1b1b1e), r: .32, coat: .3, flute: 42 });
+  mat("plinth", { base: hex(0x8e0d17), r: .18, coat: .8 });
   mat("kick", { base: hex(0x121413), r: .4, m: .4 });
   mat("ledStrip", { base: [.1,.1,.1], r: .5, em: [6.5,5.8,4.7] });
   mat("paper", { base: hex(0xf7f5ef), r: .6 });
@@ -615,22 +601,23 @@ function buildWorld() {
   mat("podium", { base: hex(0xece7dd), r: .22, coat: .7 });
   mat("mirror", { base: [.9,.9,.9], r: .03, m: 1 });
 
-  /* ---- Fronton et PLV ---- */
+  /* ---- Fronton et PLV, sans marque ---- */
   mat("frontonFace", { map: fronton(2048, 560, x => {
     const w = 2048, h = 560;
-    T(x, "ONDÉE", w/2, h*.42, 250, { f: FD, c: "#fff3df", ls: 42, max: w*.72 });
-    T(x, "SOINS NÉS DE LA PLUIE", w/2, h*.83, 54, { c: "#d9b98a", w: 400, ls: 24, max: w*.74 });
-  }), emMap: true, base: [.02,.02,.02], em: [5.2,5.2,5.2], r: .22, coat: .35 });
-  mat("fasciaFace", { map: fronton(2048, 128, x => { for (let i = 0; i < 3; i++) T(x, "ONDÉE", 2048*(i+.5)/3, 66, 84, { f: FD, c: "#fff3df", ls: 16 }); }), emMap: true, base: [.02,.02,.02], em: [3.2,3.2,3.2], r: .1, coat: 1 });
+    x.fillStyle = "#b5121b"; x.fillRect(0, 0, w, h);
+    T(x, "BEAUTÉ", w/2, h*.42, 240, { f: FD, c: "#ffffff", ls: 26, max: w*.72 });
+    T(x, "SOINS  ·  VISAGE  ·  CORPS", w/2, h*.83, 52, { c: "#ffffff", w: 400, ls: 18, max: w*.74 });
+  }), emMap: true, base: [.02,.02,.02], em: [1.2,1.2,1.2], r: .24, coat: .2 });
+  mat("fasciaFace", { map: fronton(2048, 128, x => { x.fillStyle = "#b5121b"; x.fillRect(0, 0, 2048, 128); ["CORPS","VISAGE","SÉRUMS"].forEach((n, i) => T(x, n, 2048*(i+.5)/3, 66, 66, { f: FD, c: "#ffffff", ls: 12 })); }), emMap: true, base: [.02,.02,.02], em: [1.05,1.05,1.05], r: .24, coat: .2 });
   mat("lightbox", { map: lightbox(), emMap: true, base: [.02,.02,.02], em: [1.5,1.5,1.5], r: .06, coat: 1 });
-  mat("wobbler", { map: draw(256, 256, x => { x.fillStyle = "#d9b98a"; x.fillRect(0,0,256,256); T(x, "Nouveau", 128, 108, 54, { f: FD, c: "#10282a", max: 210 }); T(x, "−20 % sur le 2e", 128, 158, 25, { c: "#10282a", w: 500, max: 200 }); }), r: .45 });
+  mat("wobbler", { map: draw(256, 256, x => { x.fillStyle = "#b5121b"; x.fillRect(0,0,256,256); T(x, "Nouveau", 128, 108, 46, { f: FD, c: "#fff", max: 210 }); T(x, "−20 % sur le 2e", 128, 158, 25, { c: "#fff", w: 500, max: 200 }); }), r: .45 });
 
   /* ---- Étiquettes de prix ---- */
   const tags = [
-    ["tag1", "39,90 €", "1 330,00 € / l", "Sérum Pluie Vive"], ["tag2", "42,50 €", "850,00 € / l", "Crème de Nuée"],
-    ["tag3", "24,90 €", "124,50 € / l", "Lait de Brume"], ["tag4", "19,90 €", "398,00 € / l", "Baume Rosée"],
-    ["tag5", "18,50 €", "185,00 € / l", "Eau de Brume"], ["tag6", "14,90 €", "37,25 € / l", "Eau micellaire"],
-    ["tag7", "59,00 €", "le coffret", "Rituel Ondée"]
+    ["tag1", "39,90 €", "1 330,00 € / l", "Concentré Énergie"], ["tag2", "42,50 €", "850,00 € / l", "Crème Pureté"],
+    ["tag3", "24,90 €", "124,50 € / l", "Lait Corps"], ["tag4", "19,90 €", "398,00 € / l", "Baume Réparateur"],
+    ["tag5", "18,50 €", "185,00 € / l", "Brume Fraîche"], ["tag6", "14,90 €", "37,25 € / l", "Eau micellaire"],
+    ["tag7", "59,00 €", "le coffret", "Coffret Rituel"]
   ];
   tags.forEach((t, i) => mat(t[0], { map: priceTag(t[1], t[2], t[3], i === 6), r: .35, coat: .3 }));
   const gTag = rbox(.068, .03, .0015, .0005, "front");
@@ -644,8 +631,8 @@ function buildWorld() {
   const gCollar = lathe([[0,.0705],[.0095,.0705,.0006],[.0095,.087,.0008],[0,.087]], 22);
   const gBulb = lathe([[0,.087],[.0068,.087,.0005],[.0072,.1,.003],[.0058,.113,.004],[0,.116]], 20);
   const gLabelS = arc(.01672, .012, .05, 2.55);
-  mat("lblSerum", { map: paperLabel(600, 300, "#f3efe6", "#15393a", "Brume", "Sérum Pluie Vive", "Acide hyaluronique 2 %", "30 ml · 1.0 fl.oz", "#a57f45"), r: .5 });
-  mat("lblSerumN", { map: paperLabel(600, 300, "#1d1422", "#e6c9a0", "Nuit", "Élixir de Nuit", "Rétinal 0,1 % · Squalane", "30 ml · 1.0 fl.oz", "#c58a5e"), r: .42 });
+  mat("lblSerum", { map: printLabel(600, 300, "Énergie", "Concentré Énergie", "Peptides · Réishi", "30 ml · 1.0 fl.oz"), cut: true, base: [1,1,1], r: .4 });
+  mat("lblSerumN", { map: printLabel(600, 300, "Nuit", "Concentré de Nuit", "Rétinal 0,1 % · Squalane", "30 ml · 1.0 fl.oz"), cut: true, base: hex(0xdcdddf), r: .3, m: 1 });
   prod("serum", [part(gSerumL,mats.oilAmber), part(gSerum,mats.glassAmber), part(gCollar,mats.gold), part(gBulb,mats.rubber), part(gLabelS,mats.lblSerum)]);
   prod("serumN", [part(gSerumL,mats.oilNuit), part(gSerum,mats.glassNuit), part(gCollar,mats.copper), part(gBulb,mats.rubber), part(gLabelS,mats.lblSerumN)]);
   /* Pot de crème 50 ml, verre dépoli épais et couvercle laiton */
@@ -653,8 +640,8 @@ function buildWorld() {
   const gJarIn = lathe([[0,.006],[.0275,.006,.003],[.0275,.037,.002],[0,.037]], 30);
   const gLid = lathe([[0,.039],[.0343,.039,.0008],[.0348,.0405,.0008],[.0348,.0605,.002],[.0325,.0628,.002],[0,.0628]], 36);
   const gJarL = arc(.03465, .009, .031, 2.4, 26);
-  mat("lblJar", { map: paperLabel(700, 180, "#f3efe6", "#15393a", "Brume", "Crème de Nuée", "48 h · Peaux sèches", "50 ml", "#a57f45"), r: .5 });
-  mat("lblJarR", { map: paperLabel(700, 180, "#f8ece6", "#5b2f2b", "Rosée", "Crème Aube", "Niacinamide 5 %", "50 ml", "#a5694f"), r: .5 });
+  mat("lblJar", { map: printLabel(700, 180, "Pureté", "Crème Pureté", "48 h · Peaux sèches", "50 ml"), cut: true, base: hex(0x8e0d17), r: .4 });
+  mat("lblJarR", { map: printLabel(700, 180, "Énergie", "Crème Énergie", "Jour · SPF 30", "50 ml"), cut: true, base: [1,1,1], r: .4 });
   prod("jar", [part(gJarIn,mats.creamW), part(gJar,mats.glassFrost), part(gLid,mats.brass), part(gJarL,mats.lblJar)]);
   prod("jarR", [part(gJarIn,mats.creamR), part(gJar,mats.glassRose), part(gLid,mats.gold), part(gJarL,mats.lblJarR)]);
   /* Lait pour le corps, flacon pompe 200 ml */
@@ -663,9 +650,9 @@ function buildWorld() {
   const gPumpH = rbox(.052, .012, .02, .0035, "front");
   const gNozzle = lathe([[0,0],[.0034,0,.0006],[.0034,.02,.0006],[0,.02]], 12);
   const pumpT = (bg, c, g, n, s, v) => bodyLabel(1024, 768, bg, c, g, n, s, v, { top: .22, brand: .13, span: 310 });
-  mat("pumpB", { map: pumpT("#a9c4bb", "#14302f", "Brume", "Lait de Brume", "Eau de pluie · Céramides", "200 ml"), r: .4, coat: .35 });
-  mat("pumpR", { map: pumpT("#e7c4b8", "#5b2f2b", "Rosée", "Lait Rosée", "Rose de mai · Karité", "200 ml"), r: .4, coat: .35 });
-  mat("pumpW", { map: pumpT("#f1eee6", "#15393a", "Essentiels", "Gel Lavant", "Doux, sans savon", "200 ml"), r: .4, coat: .35 });
+  mat("pumpB", { map: pumpT("#f4f2ee", "#a80f1a", "Pureté", "Lait Corps", "Céramides · Glycérine", "200 ml"), r: .4, coat: .35 });
+  mat("pumpR", { map: pumpT("#a80f1a", "#ffffff", "Énergie", "Lait Énergie", "Riz · Karité", "200 ml"), r: .4, coat: .35 });
+  mat("pumpW", { map: pumpT("#17171a", "#e6e7e8", "Essentiels", "Gel Lavant", "Doux, sans savon", "200 ml"), r: .4, coat: .35 });
   ["B","R","W"].forEach(s => prod("pump"+s, [part(gPump,mats["pump"+s]), part(gPumpC,mats.gold), { g: gPumpH, m: mats.gold, t: m4.trs(.006,.162,0) }, { g: gNozzle, m: mats.gold, t: new Float32Array([0,1,0,0, -1,0,0,0, 0,0,1,0, .034,.1635,0,1]) }]));
   /* Tube 50 ml debout sur son bouchon */
   const gTube = tubeBody(.0178, .024, .104);
@@ -674,24 +661,23 @@ function buildWorld() {
   const tubeT = (bg, c, g, n, s, v) => draw(1024, 700, x => {
     x.fillStyle = bg; x.fillRect(0,0,1024,700);
     const cx = 512, sp = 300;
-    T(x, "ONDÉE", cx, 170, 72, { f: FD, c, ls: 12, max: sp });
-    x.fillStyle = c; x.fillRect(cx-32, 225, 64, 2);
-    T(x, g.toUpperCase(), cx, 260, 20, { c, w: 500, ls: 6, max: sp });
-    T(x, n, cx, 330, 46, { f: FD, c, max: sp });
-    T(x, s, cx, 390, 22, { c, max: sp });
+    T(x, n, cx, 215, 50, { f: FD, c, max: sp });
+    x.fillStyle = c; x.fillRect(cx-32, 268, 64, 2);
+    T(x, g.toUpperCase(), cx, 305, 20, { c, w: 500, ls: 6, max: sp });
+    T(x, s, cx, 360, 22, { c, max: sp });
     T(x, v, cx, 560, 22, { c, w: 500, max: sp });
   });
-  mat("tubeR", { map: tubeT("#e7c4b8", "#5b2f2b", "Rosée", "Baume Rosée", "Lèvres et zones sèches", "50 ml"), r: .32, coat: .5 });
-  mat("tubeB", { map: tubeT("#d2e0d9", "#14302f", "Brume", "Masque Nuée", "Argile blanche · Algues", "50 ml"), r: .32, coat: .5 });
-  mat("tubeW", { map: tubeT("#f4f1e9", "#15393a", "Essentiels", "SPF 50 Voile", "Invisible, sans traces", "50 ml"), r: .3, coat: .5 });
+  mat("tubeR", { map: tubeT("#a80f1a", "#ffffff", "Énergie", "Baume Réparateur", "Lèvres et zones sèches", "50 ml"), r: .32, coat: .5 });
+  mat("tubeB", { map: tubeT("#f4f2ee", "#a80f1a", "Pureté", "Masque Purifiant", "Argile blanche · Algues", "50 ml"), r: .32, coat: .5 });
+  mat("tubeW", { map: tubeT("#d9dadb", "#17171a", "Essentiels", "Voile SPF 50", "Invisible, sans traces", "50 ml"), r: .3, coat: .5 });
   ["R","B","W"].forEach(s => prod("tube"+s, [part(gTube,mats["tube"+s]), part(gTubeC,s==="R"?mats.gold:mats.brass), part(gCrimp,mats["tube"+s],0,.1285,0)]));
   /* Brume 100 ml */
   const gMist = lathe([[0,0],[.0205,0,.002],[.022,.002,.002],[.022,.099,.005],[.0105,.106,.002],[.0105,.11,.0005],[0,.11]], LATHE);
   const gMistL = lathe([[0,.003],[.0205,.003,.0012],[.0208,.09,.0012],[0,.09]], 24);
   const gMistC = lathe([[0,.108],[.012,.108,.0006],[.012,.118,.0006],[.0085,.118,.0006],[.0085,.133,.0025],[0,.135]], 22);
   const gMistA = arc(.02215, .02, .08, 2.4, 22);
-  mat("lblMist", { map: paperLabel(480, 420, "#f3efe6", "#15393a", "Brume", "Eau de Brume", "Rafraîchit et fixe", "100 ml", "#a57f45"), r: .5 });
-  mat("lblMistR", { map: paperLabel(480, 420, "#f8ece6", "#5b2f2b", "Rosée", "Eau de Rose", "Distillée à la vapeur", "100 ml", "#a5694f"), r: .5 });
+  mat("lblMist", { map: printLabel(480, 420, "Pureté", "Brume Fraîche", "Rafraîchit et fixe", "100 ml"), cut: true, base: hex(0x17171a), r: .4 });
+  mat("lblMistR", { map: printLabel(480, 420, "Énergie", "Eau de Rose", "Distillée à la vapeur", "100 ml"), cut: true, base: hex(0x8e0d17), r: .4 });
   prod("mist", [part(gMistL,mats.waterPale), part(gMist,mats.glassClear), part(gMistC,mats.chrome), part(gMistA,mats.lblMist)]);
   prod("mistR", [part(gMistL,mats.waterRose), part(gMist,mats.glassClear), part(gMistC,mats.gold), part(gMistA,mats.lblMistR)]);
   /* Eau micellaire 400 ml */
@@ -699,27 +685,27 @@ function buildWorld() {
   const gBigL = lathe([[0,.005],[.0315,.005,.002],[.0318,.14,.012],[0,.15]], 26);
   const gBigC = lathe([[0,.172],[.0185,.172,.0008],[.0185,.2,.0016],[0,.2]], 24);
   const gBigA = arc(.03315, .02, .135, 2.3, 26);
-  mat("lblBig", { map: paperLabel(520, 520, "#f6f3ec", "#15393a", "Essentiels", "Eau micellaire", "Démaquille, apaise, sans rinçage", "400 ml", "#a57f45"), r: .5 });
+  mat("lblBig", { map: printLabel(520, 520, "Essentiels", "Eau micellaire", "Démaquille sans rinçage", "400 ml"), cut: true, base: hex(0x8e0d17), r: .4 });
   prod("big", [part(gBigL,mats.waterPale), part(gBig,mats.glassClear), part(gBigC,mats.frostLid), part(gBigA,mats.lblBig)]);
   /* Étuis */
   const boxT = [
-    ["boxSerum", 512, 900, "#a9c4bb", "#14302f", "#7a5c2e", "Brume", "Pluie Vive", "Acide hyaluronique 2 %", "30 ml"],
-    ["boxNuit", 512, 900, "#21162a", "#efdcbf", "#c58a5e", "Nuit", "Élixir de Nuit", "Rétinal 0,1 %", "30 ml"],
-    ["boxRose", 512, 900, "#e7c4b8", "#5b2f2b", "#8a5a48", "Rosée", "Crème Aube", "Niacinamide 5 %", "50 ml"],
-    ["boxPerle", 512, 900, "#f1eee6", "#15393a", "#a57f45", "Brume", "Crème de Nuée", "48 h · Peaux sèches", "50 ml"]
+    ["boxSerum", 512, 900, "#a80f1a", "#ffffff", "#e3e4e5", "Énergie", "Concentré Énergie", "Peptides · Réishi", "30 ml"],
+    ["boxNuit", 512, 900, "#17171a", "#f0f0f0", "#9a9c9e", "Nuit", "Concentré de Nuit", "Rétinal 0,1 %", "30 ml"],
+    ["boxRose", 512, 900, "#f4f2ee", "#a80f1a", "#a80f1a", "Énergie", "Crème Énergie", "Jour · SPF 30", "50 ml"],
+    ["boxPerle", 512, 900, "#f4f2ee", "#1a1a1c", "#8d8f91", "Pureté", "Crème Pureté", "48 h · Peaux sèches", "50 ml"]
   ];
   boxT.forEach(b => mat(b[0], { map: carton(b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9]), r: .42, coat: .4 }));
   const gBoxTall = rbox(.052, .125, .042, .0012), gBoxCube = rbox(.074, .074, .074, .0014);
   prod("boxSerum", [part(gBoxTall,mats.boxSerum,0,.0625)]); prod("boxNuit", [part(gBoxTall,mats.boxNuit,0,.0625)]);
   prod("boxRose", [part(gBoxCube,mats.boxRose,0,.037)]); prod("boxPerle", [part(gBoxCube,mats.boxPerle,0,.037)]);
   mat("coffretF", { map: draw(1400, 1000, x => {
-    const g = x.createLinearGradient(0,0,0,1000); g.addColorStop(0,"#163c3d"); g.addColorStop(1,"#0d2728"); x.fillStyle = g; x.fillRect(0,0,1400,1000);
-    x.strokeStyle = "#d9b98a"; x.lineWidth = 3; x.strokeRect(30, 30, 1056, 940);
-    x.globalAlpha = .4; for (let i = 1; i < 11; i++) { x.beginPath(); x.ellipse(558, 760, 46*i, 15*i, 0, 0, 7); x.stroke(); } x.globalAlpha = 1;
-    T(x, "ONDÉE", 558, 250, 158, { f: FD, c: "#f4e3c8", ls: 18 });
-    T(x, "COFFRET RITUEL", 558, 370, 40, { c: "#d9b98a", ls: 12, w: 500 });
-    T(x, "Sérum · Crème · Brume", 558, 450, 62, { f: FD, c: "#f3f1ea" });
-    x.save(); x.translate(1243, 500); x.rotate(-Math.PI/2); T(x, "ONDÉE  ·  Coffret Rituel", 0, 0, 62, { f: FD, c: "#f4e3c8", ls: 4 }); x.restore();
+    x.fillStyle = "#a80f1a"; x.fillRect(0,0,1400,1000);
+    x.strokeStyle = "#e3e4e5"; x.lineWidth = 3; x.strokeRect(30, 30, 1056, 940);
+    T(x, "Coffret Rituel", 558, 330, 118, { f: FD, c: "#ffffff", max: 960 });
+    x.fillStyle = "#e3e4e5"; x.fillRect(498, 425, 120, 3);
+    T(x, "Concentré · Crème · Lotion", 558, 505, 50, { c: "#ffffff", ls: 3, max: 900 });
+    T(x, "Trois soins pour la routine du soir", 558, 790, 36, { c: "#ffffff", max: 900 });
+    x.save(); x.translate(1243, 500); x.rotate(-Math.PI/2); T(x, "Coffret Rituel", 0, 0, 62, { f: FD, c: "#ffffff", ls: 3 }); x.restore();
   }), r: .36, coat: .55 });
   const gCoffret = rbox(.25, .19, .07, .002);
   prod("coffret", [part(gCoffret,mats.coffretF,0,.095)]);
@@ -823,7 +809,7 @@ function buildWorld() {
   /* Podiums au sol avec pot géant factice */
   putRaw(lathe([[0,0],[.27,0,.006],[.27,.46,.01],[0,.46]], 64), mats.podium, m4.trs(-1.08,0,2.12));
   putRaw(lathe([[0,0],[.19,0,.006],[.19,.26,.008],[0,.26]], 56), mats.podium, m4.trs(-.76,0,2.3));
-  put("jar", m4.trs(-1.08,.46,2.12,.3,3.1));
+  put("jarR", m4.trs(-1.08,.46,2.12,.3,3.1));
   put("serum", m4.trs(-.72,.26,2.32,.25,1)); put("jarR", m4.trs(-.82,.26,2.38,.1,1)); put("mist", m4.trs(-.76,.26,2.22,-.2,1));
   put("tubeB", m4.trs(-.64,.26,2.24,-.5,1));
 
@@ -958,7 +944,7 @@ function drawShadows() {
     gl.framebufferTextureLayer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, shTex, 0, i);
     gl.clear(gl.DEPTH_BUFFER_BIT);
     gl.uniformMatrix4fv(PS.u.uVP, false, uSM.subarray(i*16, i*16+16));
-    for (const b of scene) { if (b.m.kind !== 0 || b.m.noShadow || b.m.name === "ceil" || b.m.name === "ceilLight" || b.m.name === "wall") continue; bindInstances(b); gl.drawElementsInstanced(gl.TRIANGLES, b.g.count, gl.UNSIGNED_INT, 0, b.n); }
+    for (const b of scene) { if (b.m.kind !== 0 || b.m.noShadow || b.m.cut || b.m.name === "ceil" || b.m.name === "ceilLight" || b.m.name === "wall") continue; bindInstances(b); gl.drawElementsInstanced(gl.TRIANGLES, b.g.count, gl.UNSIGNED_INT, 0, b.n); }
   }
   gl.disable(gl.POLYGON_OFFSET_FILL);
 }
@@ -974,7 +960,7 @@ function setMat(m) {
   const u = P.u;
   gl.uniform3fv(u.uBase, m.base); gl.uniform3fv(u.uEm, m.em); gl.uniform1f(u.uRough, m.r); gl.uniform1f(u.uMetal, m.m); gl.uniform1f(u.uCoat, m.coat);
   gl.uniform1i(u.uKind, m.kind); gl.uniform3fv(u.uAbsorb, m.absorb); gl.uniform1f(u.uFrost, m.frost); gl.uniform1f(u.uMicro, m.micro); gl.uniform1f(u.uFlute, m.flute);
-  const has = !!m.map; gl.uniform1i(u.uHasMap, has?1:0); gl.uniform1i(u.uEmMap, m.emMap?1:0);
+  const has = !!m.map; gl.uniform1i(u.uHasMap, has?1:0); gl.uniform1i(u.uEmMap, m.emMap?1:0); gl.uniform1i(u.uCut, m.cut?1:0);
   gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, has ? m.map : dummy);
 }
 function drawList(filter) {
@@ -1000,13 +986,16 @@ function renderMain(vp, eye, jit, frameN) {
   gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, R.mirror.t);
   setCommon(eye, vp, false, jit, frameN, RW, RH_);
   gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK);
-  drawList(m => m.kind !== 1);
+  drawList(m => m.kind !== 1 && !m.cut);
   /* Résolution intermédiaire : le verre réfracte ce qui est déjà dessiné */
   gl.bindFramebuffer(gl.READ_FRAMEBUFFER, R.ms.fb); gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, R.copy.fb);
   gl.blitFramebuffer(0,0,RW,RH_,0,0,RW,RH_,gl.COLOR_BUFFER_BIT,gl.NEAREST);
   gl.bindFramebuffer(gl.FRAMEBUFFER, R.ms.fb);
   gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, R.copy.t);
   drawList(m => m.kind === 1);
+  gl.enable(gl.BLEND); gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE); gl.depthMask(false);
+  drawList(m => m.cut);
+  gl.disable(gl.BLEND); gl.depthMask(true);
   gl.bindFramebuffer(gl.READ_FRAMEBUFFER, R.ms.fb); gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, R.frame.fb);
   gl.blitFramebuffer(0,0,RW,RH_,0,0,RW,RH_,gl.COLOR_BUFFER_BIT,gl.NEAREST);
 }
@@ -1229,7 +1218,7 @@ function start() {
   } catch (e) { console.error(e); fail("La scène n'a pas pu être construite sur cet appareil. Essayez un autre navigateur."); window.__gondole = { error: String(e) }; }
 }
 const fontsReady = (document.fonts && document.fonts.load) ? Promise.all([
-  document.fonts.load('400 40px "Italiana"', "ONDÉE"), document.fonts.load('400 20px "Jost"', "Soin"), document.fonts.load('500 20px "Jost"', "Soin")
+  document.fonts.load('400 40px "Bodoni Moda"', "BEAUTÉ"), document.fonts.load('400 20px "Jost"', "Soin"), document.fonts.load('500 20px "Jost"', "Soin")
 ]) : Promise.resolve();
 Promise.race([fontsReady, new Promise(r => setTimeout(r, 2500))]).catch(() => {}).then(() => setTimeout(start, 30));
 })();
