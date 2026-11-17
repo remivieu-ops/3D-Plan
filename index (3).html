@@ -1,0 +1,1835 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#120a0a">
+<title>Mode · Tête de gondole 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --rouge:#b3121f;--rouge-f:#8c0d17;--nacre:#f6f2ec;--noir:#141212;--argent:#c9ccd1;
+  --disp:'Bodoni Moda','Bodoni 72','Didot','Bodoni MT',Georgia,'Times New Roman',serif;
+  --txt:'Jost','Futura','Avenir Next','Century Gothic','Segoe UI',Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#0f0b0b;overscroll-behavior:none;
+  touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none;cursor:grab}
+#gl.drag{cursor:grabbing}
+.verre{background:rgba(248,244,238,.6);-webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5);
+  border:1px solid rgba(255,255,255,.6);box-shadow:0 10px 34px rgba(20,8,8,.22),inset 0 1px 0 rgba(255,255,255,.7)}
+#cartouche{position:fixed;z-index:3;top:calc(12px + env(safe-area-inset-top));left:calc(12px + env(safe-area-inset-left));
+  padding:11px 18px 12px 15px;border-radius:14px;border-left:4px solid var(--rouge);pointer-events:none;max-width:calc(100vw - 24px)}
+#cartouche .marque{font-family:var(--disp);font-weight:600;font-size:21px;letter-spacing:.2em;color:var(--noir);line-height:1.1;margin:0}
+#cartouche .marque span{color:var(--rouge)}
+#cartouche .sous{font-family:var(--txt);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:#4d4643;margin:4px 0 0}
+#barre{position:fixed;z-index:3;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom));
+  max-width:calc(100vw - 20px);display:flex;gap:3px;padding:4px;border-radius:999px;overflow-x:auto;overflow-y:hidden;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;touch-action:pan-x;white-space:nowrap}
+#barre::-webkit-scrollbar{display:none}
+#barre button{flex:0 0 auto;min-height:44px;min-width:44px;padding:0 17px;border:0;border-radius:999px;background:transparent;
+  font-family:var(--txt);font-size:14.5px;font-weight:500;color:#2a2422;cursor:pointer;letter-spacing:.03em;transition:background .25s,color .25s}
+#barre button:hover{background:rgba(179,18,31,.09)}
+#barre button.on{background:var(--rouge);color:#fff;box-shadow:0 3px 12px rgba(179,18,31,.35)}
+#barre button:focus-visible{outline:2px solid var(--rouge);outline-offset:2px}
+#prog{position:fixed;z-index:4;left:0;bottom:0;height:2px;width:0;background:linear-gradient(90deg,var(--rouge),#ef5a63);
+  opacity:0;transition:opacity .5s;pointer-events:none}
+#aide{position:fixed;z-index:3;left:50%;top:50%;transform:translate(-50%,-50%);padding:15px 22px;border-radius:16px;
+  font-family:var(--txt);font-size:14px;color:#2a2422;text-align:center;line-height:1.75;pointer-events:none;opacity:0;transition:opacity .9s;width:max-content;max-width:calc(100vw - 40px)}
+#aide b{font-weight:600;color:var(--rouge-f)}
+#aide.vis{opacity:1}
+#chargement{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+  background:radial-gradient(circle at 50% 45%,#3a1216 0,#170b0c 55%,#0b0707 100%);color:var(--nacre);transition:opacity .7s}
+#chargement .t{font-family:var(--disp);font-size:30px;letter-spacing:.32em;padding-left:.32em}
+#chargement .s{font-family:var(--txt);font-size:12px;letter-spacing:.22em;text-transform:uppercase;opacity:.75}
+#chargement .l{width:140px;height:2px;background:rgba(255,255,255,.15);overflow:hidden;border-radius:2px}
+#chargement .l i{display:block;height:100%;width:40%;background:var(--rouge);animation:va 1.2s ease-in-out infinite}
+@keyframes va{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}
+#message{position:fixed;inset:0;z-index:11;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(12,8,8,.88)}
+#message .boite{max-width:460px;padding:24px 26px;border-radius:16px;font-family:var(--txt);color:#2a2422;line-height:1.6}
+#message h2{font-family:var(--disp);font-weight:600;font-size:22px;margin:0 0 8px;color:var(--rouge-f)}
+@media (max-width:520px){
+  #cartouche{padding:9px 14px 10px 12px}
+  #cartouche .marque{font-size:17px}
+  #cartouche .sous{font-size:10px;letter-spacing:.12em}
+  #barre button{padding:0 14px;font-size:14px}
+  #aide{font-size:13px}
+}
+@media (prefers-reduced-motion:reduce){
+  #chargement .l i{animation:none;width:100%}
+  #aide,#prog,#chargement{transition:none}
+}
+</style>
+</head>
+<body>
+<canvas id="gl" tabindex="0" aria-label="Scène 3D interactive : tête de gondole mode Femme, Homme et Enfant"></canvas>
+
+<div id="cartouche" class="verre">
+  <p class="marque">MODE <span>·</span> HIVER</p>
+  <p class="sous">Femme · Homme · Enfant — Tête de gondole</p>
+</div>
+
+<nav id="barre" class="verre" aria-label="Vues prédéfinies">
+  <button data-v="tq" class="on">Trois-quarts</button>
+  <button data-v="face">Face</button>
+  <button data-v="rayon">Rayon</button>
+  <button data-v="cote">Côté</button>
+  <button data-v="dos">Dos</button>
+  <button data-v="tour">Visite auto</button>
+</nav>
+
+<div id="aide" class="verre" role="status"></div>
+<div id="prog"></div>
+
+<div id="chargement">
+  <div class="t">MODE</div>
+  <div class="s" id="chTxt">Préparation de la scène…</div>
+  <div class="l"><i></i></div>
+</div>
+
+<div id="message"><div class="boite verre"><h2 id="msgT"></h2><div id="msgB"></div></div></div>
+
+<script>
+'use strict';
+(() => {
+/* =====================================================================
+   Réglages & détection
+   ===================================================================== */
+const $ = s => document.querySelector(s);
+const canvas = $('#gl');
+const MOBILE = matchMedia('(pointer: coarse)').matches;
+const RMQ = matchMedia('(prefers-reduced-motion: reduce)');
+let reduced = RMQ.matches;
+if (RMQ.addEventListener) RMQ.addEventListener('change', e => { reduced = e.matches; });
+
+const Q = MOBILE ? {
+  rs: 2, seg: 12, gu: 8, gv: 10, shadow: 512, tex: 512, msaa: 2, accum: 10, refl: 0.33,
+  dprCap: 2, scale: 0.72, minScale: 0.45, maxScale: 1.0, bloom: 4, dof: 0.0022, pcfR: 2.0
+} : {
+  rs: 3, seg: 28, gu: 14, gv: 20, shadow: 1024, tex: 1024, msaa: 4, accum: 48, refl: 0.5,
+  dprCap: 2, scale: 1.0, minScale: 0.6, maxScale: 1.0, bloom: 5, dof: 0.0035, pcfR: 2.5
+};
+if (window.__GONDOLE_Q) Object.assign(Q, window.__GONDOLE_Q);
+
+/* =====================================================================
+   Mathématiques
+   ===================================================================== */
+const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const scl = (a, s) => [a[0] * s, a[1] * s, a[2] * s];
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const norm = a => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const sm = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+const wrapPi = a => { a = (a + Math.PI) % (Math.PI * 2); if (a < 0) a += Math.PI * 2; return a - Math.PI; };
+
+function m4persp(fovy, asp, n, f) {
+  const t = 1 / Math.tan(fovy / 2);
+  return new Float32Array([t / asp, 0, 0, 0, 0, t, 0, 0, 0, 0, (f + n) / (n - f), -1, 0, 0, 2 * f * n / (n - f), 0]);
+}
+function m4look(e, c, u) {
+  const z = norm(sub(e, c)), x = norm(cross(u, z)), y = cross(z, x);
+  return new Float32Array([x[0], y[0], z[0], 0, x[1], y[1], z[1], 0, x[2], y[2], z[2], 0, -dot(x, e), -dot(y, e), -dot(z, e), 1]);
+}
+function m4mul(a, b) {
+  const o = new Float32Array(16);
+  for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) {
+    let s = 0; for (let k = 0; k < 4; k++) s += a[k * 4 + r] * b[c * 4 + k]; o[c * 4 + r] = s;
+  }
+  return o;
+}
+function m4inv(m) {
+  const a = m, o = new Float32Array(16);
+  const b00 = a[0] * a[5] - a[1] * a[4], b01 = a[0] * a[6] - a[2] * a[4], b02 = a[0] * a[7] - a[3] * a[4],
+    b03 = a[1] * a[6] - a[2] * a[5], b04 = a[1] * a[7] - a[3] * a[5], b05 = a[2] * a[7] - a[3] * a[6],
+    b06 = a[8] * a[13] - a[9] * a[12], b07 = a[8] * a[14] - a[10] * a[12], b08 = a[8] * a[15] - a[11] * a[12],
+    b09 = a[9] * a[14] - a[10] * a[13], b10 = a[9] * a[15] - a[11] * a[13], b11 = a[10] * a[15] - a[11] * a[14];
+  let d = b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06; d = 1 / d;
+  o[0] = (a[5] * b11 - a[6] * b10 + a[7] * b09) * d; o[1] = (a[2] * b10 - a[1] * b11 - a[3] * b09) * d;
+  o[2] = (a[13] * b05 - a[14] * b04 + a[15] * b03) * d; o[3] = (a[10] * b04 - a[9] * b05 - a[11] * b03) * d;
+  o[4] = (a[6] * b08 - a[4] * b11 - a[7] * b07) * d; o[5] = (a[0] * b11 - a[2] * b08 + a[3] * b07) * d;
+  o[6] = (a[14] * b02 - a[12] * b05 - a[15] * b01) * d; o[7] = (a[8] * b05 - a[10] * b02 + a[11] * b01) * d;
+  o[8] = (a[4] * b10 - a[5] * b08 + a[7] * b06) * d; o[9] = (a[1] * b08 - a[0] * b10 - a[3] * b06) * d;
+  o[10] = (a[12] * b04 - a[13] * b02 + a[15] * b00) * d; o[11] = (a[9] * b02 - a[8] * b04 - a[11] * b00) * d;
+  o[12] = (a[5] * b07 - a[4] * b09 - a[6] * b06) * d; o[13] = (a[0] * b09 - a[1] * b07 + a[2] * b06) * d;
+  o[14] = (a[13] * b01 - a[12] * b03 - a[14] * b00) * d; o[15] = (a[8] * b03 - a[9] * b01 + a[10] * b00) * d;
+  return o;
+}
+function RNG(seed) {
+  let s = seed | 0;
+  return () => { s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+function halton(i, b) { let f = 1, r = 0; while (i > 0) { f /= b; r += f * (i % b); i = Math.floor(i / b); } return r; }
+const lin = h => { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(c => { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }); };
+
+/* Transformations : p' = R·(s∘p) + t, R = Ry·Rx·Rz */
+function mul3(A, B) {
+  const o = new Array(9);
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) o[r * 3 + c] = A[r * 3] * B[c] + A[r * 3 + 1] * B[3 + c] + A[r * 3 + 2] * B[6 + c];
+  return o;
+}
+function X(t = [0, 0, 0], ry = 0, s = 1, rx = 0, rz = 0) {
+  const S = Array.isArray(s) ? s : [s, s, s];
+  const cy = Math.cos(ry), sy = Math.sin(ry), cx = Math.cos(rx), sx = Math.sin(rx), cz = Math.cos(rz), sz = Math.sin(rz);
+  const Ry = [cy, 0, sy, 0, 1, 0, -sy, 0, cy], Rx = [1, 0, 0, 0, cx, -sx, 0, sx, cx], Rz = [cz, -sz, 0, sz, cz, 0, 0, 0, 1];
+  return { R: mul3(Ry, mul3(Rx, Rz)), s: S, t };
+}
+const XI = X();
+function xp(T, p) {
+  const a = p[0] * T.s[0], b = p[1] * T.s[1], c = p[2] * T.s[2], R = T.R;
+  return [R[0] * a + R[1] * b + R[2] * c + T.t[0], R[3] * a + R[4] * b + R[5] * c + T.t[1], R[6] * a + R[7] * b + R[8] * c + T.t[2]];
+}
+function xn(T, n) {
+  const a = n[0] / T.s[0], b = n[1] / T.s[1], c = n[2] / T.s[2], R = T.R;
+  return norm([R[0] * a + R[1] * b + R[2] * c, R[3] * a + R[4] * b + R[5] * c, R[6] * a + R[7] * b + R[8] * c]);
+}
+
+/* =====================================================================
+   Matériaux & constructeur de maillage (tout est fusionné en espace monde)
+   Sommet : pos3 nrm3 uv2 albedo3 [rugosité métal vernis émissif] [calque tissu]
+   ===================================================================== */
+const ST = 17;
+function M(col, o = {}) {
+  return { c: Array.isArray(col) ? col : lin(col), r: o.r ?? 0.5, m: o.m ?? 0, cc: o.cc ?? 0, e: o.e ?? 0, L: o.L ?? -1, f: o.f ?? 0, rect: o.rect || null };
+}
+class MB {
+  constructor() { this.v = new Float32Array(ST * 32768); this.vn = 0; this.ix = new Uint32Array(98304); this.n = 0; this.stack = []; }
+  push(t) { this.stack.push(t); }
+  pop() { this.stack.pop(); }
+  vert(p, n, u, v, m) {
+    for (let k = this.stack.length - 1; k >= 0; k--) { const T = this.stack[k]; p = xp(T, p); n = xn(T, n); }
+    if ((this.vn + 1) * ST > this.v.length) { const t = new Float32Array(this.v.length * 2); t.set(this.v); this.v = t; }
+    const a = this.v, o = this.vn * ST;
+    a[o] = p[0]; a[o + 1] = p[1]; a[o + 2] = p[2]; a[o + 3] = n[0]; a[o + 4] = n[1]; a[o + 5] = n[2];
+    a[o + 6] = u; a[o + 7] = v; a[o + 8] = m.c[0]; a[o + 9] = m.c[1]; a[o + 10] = m.c[2];
+    a[o + 11] = m.r; a[o + 12] = m.m; a[o + 13] = m.cc; a[o + 14] = m.e; a[o + 15] = m.L; a[o + 16] = m.f;
+    return this.vn++;
+  }
+  tri(a, b, c) {
+    if (this.n + 3 > this.ix.length) { const t = new Uint32Array(this.ix.length * 2); t.set(this.ix); this.ix = t; }
+    this.ix[this.n++] = a; this.ix[this.n++] = b; this.ix[this.n++] = c;
+  }
+  grid(base, cols, rows) {
+    for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+      const a = base + j * (cols + 1) + i, b = a + 1, c = a + cols + 1, d = c + 1;
+      this.tri(a, b, d); this.tri(a, d, c);
+    }
+  }
+}
+
+/* Boîte à angles arrondis */
+function axisC(half, r, rs) {
+  const o = [], inner = half - r;
+  for (let k = 0; k < rs; k++) o.push(-inner - r * Math.cos(k / rs * Math.PI / 2));
+  o.push(-inner); if (inner > 1e-6) o.push(inner);
+  for (let k = rs - 1; k >= 0; k--) o.push(inner + r * Math.cos(k / rs * Math.PI / 2));
+  return o;
+}
+const FACES = [[0, 1], [0, -1], [1, 1], [1, -1], [2, 1], [2, -1]];
+const FINFO = { '0,1': [2, -1, 1, 1], '0,-1': [2, 1, 1, 1], '1,1': [0, 1, 2, -1], '1,-1': [0, 1, 2, 1], '2,1': [0, 1, 1, 1], '2,-1': [0, -1, 1, 1] };
+function rbox(B, w, h, d, r, m, T, o) {
+  o = o || {};
+  const hs = [w / 2, h / 2, d / 2];
+  r = Math.max(0, Math.min(r, hs[0] * 0.999, hs[1] * 0.999, hs[2] * 0.999));
+  const rs = r > 0 ? (o.rs ?? Q.rs) : 0;
+  const inn = hs.map(x => x - r), C = hs.map(x => axisC(x, r, rs));
+  B.push(T || XI);
+  for (const [a, sg] of FACES) {
+    const key = a + ',' + sg, mm = (o.faces && o.faces[key]) || m;
+    const b = (a + 1) % 3, c = (a + 2) % 3, cb = C[b], cc = C[c];
+    const [ha, hsg, va, vsg] = FINFO[key];
+    const base = B.vn;
+    for (let j = 0; j < cc.length; j++) for (let i = 0; i < cb.length; i++) {
+      const p = [0, 0, 0]; p[a] = sg * hs[a]; p[b] = cb[i]; p[c] = cc[j];
+      const q = [0, 0, 0]; for (let k = 0; k < 3; k++) q[k] = Math.max(-inn[k], Math.min(inn[k], p[k]));
+      const dv = [p[0] - q[0], p[1] - q[1], p[2] - q[2]], L = Math.hypot(dv[0], dv[1], dv[2]);
+      let n = [0, 0, 0], pp = p;
+      if (L > 1e-9 && r > 0) { n = [dv[0] / L, dv[1] / L, dv[2] / L]; pp = [q[0] + n[0] * r, q[1] + n[1] * r, q[2] + n[2] * r]; }
+      else n[a] = sg;
+      let u, v;
+      if (mm.rect) {
+        const R = mm.rect, fu = 0.5 + hsg * p[ha] / (2 * hs[ha]), fv = 0.5 - vsg * p[va] / (2 * hs[va]);
+        u = R[0] + fu * (R[2] - R[0]); v = R[1] + fv * (R[3] - R[1]);
+      } else { u = hsg * p[ha]; v = vsg * p[va]; }
+      B.vert(pp, n, u, v, mm);
+    }
+    B.grid(base, cb.length - 1, cc.length - 1);
+  }
+  B.pop();
+}
+/* Révolution (lathe) : profil [[rayon, y], …] de bas en haut */
+function lathe(B, prof, m, T, o) {
+  o = o || {};
+  const seg = o.seg ?? Q.seg, sx = o.sx ?? 1, sz = o.sz ?? 1, n = prof.length, sn = [];
+  for (let i = 0; i < n - 1; i++) {
+    const dr = prof[i + 1][0] - prof[i][0], dy = prof[i + 1][1] - prof[i][1], L = Math.hypot(dr, dy);
+    sn.push(L < 1e-9 ? null : [dy / L, -dr / L]);
+  }
+  const pn = [];
+  for (let i = 0; i < n; i++) {
+    const a = i > 0 ? sn[i - 1] : null, b = i < n - 1 ? sn[i] : null;
+    const dupN = i < n - 1 && sn[i] === null, dupP = i > 0 && sn[i - 1] === null;
+    let r;
+    if (dupN) r = a; else if (dupP) r = b; else if (a && b) r = [a[0] + b[0], a[1] + b[1]]; else r = a || b;
+    if (!r) r = [1, 0];
+    const L = Math.hypot(r[0], r[1]) || 1; pn.push([r[0] / L, r[1] / L]);
+  }
+  let acc = 0; const vv = [0];
+  for (let i = 1; i < n; i++) { acc += Math.hypot(prof[i][0] - prof[i - 1][0], prof[i][1] - prof[i - 1][1]); vv.push(acc); }
+  let rmax = 0; for (const p of prof) rmax = Math.max(rmax, p[0]);
+  B.push(T || XI);
+  const base = B.vn;
+  for (let i = 0; i < n; i++) for (let j = 0; j <= seg; j++) {
+    const t = j / seg * Math.PI * 2, c = Math.cos(t), s = Math.sin(t), r = prof[i][0];
+    const nn = norm([pn[i][0] * c / sx, pn[i][1], pn[i][0] * s / sz]);
+    B.vert([r * c * sx, prof[i][1], r * s * sz], nn, t * rmax, vv[i], m);
+  }
+  B.grid(base, seg, n - 1);
+  B.pop();
+}
+function sphere(B, r, m, T, o) {
+  const k = (o && o.k) || 8, P = [];
+  for (let i = 0; i <= k; i++) { const a = -Math.PI / 2 + Math.PI * i / k; P.push([Math.cos(a) * r, Math.sin(a) * r]); }
+  P[0][0] = 0; P[k][0] = 0; lathe(B, P, m, T, o);
+}
+function tube(B, pts, rad, m, T, segs = 8) {
+  B.push(T || XI);
+  const n = pts.length, base = B.vn;
+  for (let i = 0; i < n; i++) {
+    const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)], Tg = norm(sub(b, a));
+    const up = Math.abs(Tg[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0], N = norm(cross(Tg, up)), Bn = cross(Tg, N);
+    for (let j = 0; j <= segs; j++) {
+      const t = j / segs * Math.PI * 2, c = Math.cos(t), s = Math.sin(t);
+      const nn = [N[0] * c + Bn[0] * s, N[1] * c + Bn[1] * s, N[2] * c + Bn[2] * s];
+      B.vert(add(pts[i], scl(nn, rad)), nn, j / segs, i / n, m);
+    }
+  }
+  B.grid(base, segs, n - 1);
+  B.pop();
+}
+function quad(B, w, h, m, T) {
+  B.push(T || XI);
+  const b = B.vn, R = m.rect || [0, 0, 1, 1];
+  B.vert([-w / 2, -h / 2, 0], [0, 0, 1], R[0], R[3], m); B.vert([w / 2, -h / 2, 0], [0, 0, 1], R[2], R[3], m);
+  B.vert([-w / 2, h / 2, 0], [0, 0, 1], R[0], R[1], m); B.vert([w / 2, h / 2, 0], [0, 0, 1], R[2], R[1], m);
+  B.grid(b, 1, 1);
+  B.pop();
+}
+
+/* =====================================================================
+   Textures dessinées sur canvas (atlas dans un tableau de textures)
+   0 étiquettes · 1 frontons/bandeaux · 2-3 affiches · 4 terrazzo · 5 imprimés
+   ===================================================================== */
+const DISP = '"Bodoni Moda","Bodoni 72",Didot,Georgia,serif';
+const TXT = 'Jost,"Futura","Avenir Next","Century Gothic","Segoe UI",Helvetica,Arial,sans-serif';
+const rectPx = (x, y, w, h) => [(x + 1) / 1024, (y + 1) / 1024, (x + w - 1) / 1024, (y + h - 1) / 1024];
+const euros = p => p.toFixed(2).replace('.', ',') + ' €';
+
+const FAM = {
+  F: [['Escarpins Vernis', 'Pointures 36 – 41', 89], ['Jean Droit Femme', 'Tailles 34 – 46', 49.9], ['T-shirt Coton Bio', 'Tailles XS – XL', 14.9],
+    ['Pull Côtelé Laine', 'Tailles XS – XL', 59.9], ['Pull Cachemire', 'Tailles XS – XL', 129], ['Sac Cabas Cuir', 'Taille unique', 149], ['Coffret Foulard Soie', 'Taille unique', 69]],
+  H: [['Derbies Cuir', 'Pointures 40 – 46', 109], ['Jean Slim Brut', 'Tailles 38 – 48', 59.9], ['Chemise Oxford', 'Tailles S – XXL', 39.9],
+    ['Pull Mérinos', 'Tailles S – XXL', 69.9], ['Sweat Molleton', 'Tailles S – XXL', 44.9], ['Bonnet & Écharpe', 'Taille unique', 29.9], ['Coffret Chaussettes', 'Lot de 3 paires', 24.9]],
+  E: [['Baskets Scratch', 'Pointures 24 – 35', 39.9], ['Jean Enfant', '4 – 14 ans', 24.9], ['T-shirt Imprimé', '2 – 14 ans', 9.9],
+    ['Sweat à Capuche', '4 – 14 ans', 22.9], ['Cardigan Maille', '2 – 12 ans', 27.9], ['Bonnet Pompon', '2 – 12 ans', 12.9], ['Coffret Naissance', '0 – 12 mois', 34.9]],
+  A: [['Coffret Cadeau', 'Écharpe + gants', 59], ['Ceinture Cuir', 'Tailles 85 – 110', 35], ['Gants Cuir', 'Tailles 6 – 9', 45],
+    ['Écharpe Cachemire', 'Taille unique', 79], ['Bonnet Mérinos', 'Taille unique', 25], ['Pochette Cuir', 'Taille unique', 55], ['Coffret Cadeau', 'Écharpe + gants', 59]]
+};
+const FAMI = { F: 0, H: 1, E: 2, A: 3 };
+const tagRect = (fam, lvl) => { const i = FAMI[fam] * 7 + lvl; return rectPx((i % 4) * 256, Math.floor(i / 4) * 80, 256, 80); };
+const PR = {
+  shoeF: rectPx(0, 0, 256, 88), shoeH: rectPx(256, 0, 256, 88), shoeE: rectPx(512, 0, 256, 88), coffret: rectPx(768, 0, 256, 88),
+  disc: rectPx(0, 96, 256, 256), coffret2: rectPx(256, 96, 256, 88), coffretE: rectPx(512, 96, 256, 88)
+};
+const BR = {
+  frontA: rectPx(0, 0, 1024, 64), frontB: rectPx(0, 64, 1024, 64), bandE: rectPx(0, 128, 512, 72), bandW: rectPx(512, 128, 512, 72),
+  FEMME: rectPx(0, 208, 512, 80), HOMME: rectPx(512, 208, 512, 80), ENFANT: rectPx(0, 296, 512, 80), ACCESSOIRES: rectPx(512, 296, 512, 80)
+};
+
+function spaced(c, text, x, y, sp, align) {
+  let w = 0; for (const ch of text) w += c.measureText(ch).width + sp; w -= sp;
+  let cx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+  const old = c.textAlign; c.textAlign = 'left';
+  for (const ch of text) { c.fillText(ch, cx, y); cx += c.measureText(ch).width + sp; }
+  c.textAlign = old; return w;
+}
+function fitFont(c, text, weight, size, family, maxW) {
+  let s = size; c.font = `${weight} ${s}px ${family}`;
+  while (c.measureText(text).width > maxW && s > 6) { s -= 0.5; c.font = `${weight} ${s}px ${family}`; }
+}
+function barcode(c, x, y, w, h, rng) {
+  c.fillStyle = '#1b1918'; let cx = x;
+  while (cx < x + w - 2) { const bw = 1 + Math.floor(rng() * 3); if (rng() > 0.42) c.fillRect(cx, y, bw, h); cx += bw + 1; }
+}
+
+function drawTextures() {
+  const S = Q.tex, k = S / 1024, cv = [];
+  const mk = () => { const c = document.createElement('canvas'); c.width = c.height = S; const x = c.getContext('2d'); x.scale(k, k); cv.push(c); return x; };
+  const rng = RNG(77);
+
+  /* 0 — étiquettes de prix */
+  let c = mk();
+  c.fillStyle = '#f2efe9'; c.fillRect(0, 0, 1024, 1024);
+  for (const f of 'FHEA') FAM[f].forEach((it, l) => {
+    const i = FAMI[f] * 7 + l, x = (i % 4) * 256, y = Math.floor(i / 4) * 80;
+    c.save(); c.translate(x, y);
+    c.fillStyle = '#fbfaf7'; c.fillRect(0, 0, 256, 80);
+    c.fillStyle = '#b3121f'; c.fillRect(0, 0, 8, 80);
+    c.strokeStyle = '#d9d4cc'; c.lineWidth = 2; c.strokeRect(1, 1, 254, 78);
+    c.fillStyle = '#1b1918'; c.textBaseline = 'alphabetic'; c.textAlign = 'left';
+    fitFont(c, it[0], 500, 17, TXT, 228); c.fillText(it[0], 17, 22);
+    c.fillStyle = '#6d6762'; c.font = `400 12px ${TXT}`; c.fillText(it[1], 17, 38);
+    barcode(c, 17, 47, 92, 20, rng);
+    c.fillStyle = '#6d6762'; c.font = `400 8.5px ${TXT}`; c.fillText('3 7' + String(Math.floor(rng() * 1e9)).padStart(9, '0'), 17, 76);
+    c.fillStyle = '#1b1918'; c.textAlign = 'right';
+    fitFont(c, euros(it[2]), 600, 32, DISP, 128); c.fillText(euros(it[2]), 246, 68);
+    c.restore();
+  });
+
+  /* 1 — frontons, bandeaux et enseignes murales */
+  c = mk();
+  c.fillStyle = '#9e0f1b'; c.fillRect(0, 0, 1024, 1024);
+  const redBand = (x, y, w, h) => {
+    const g = c.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, '#c4202d'); g.addColorStop(0.55, '#ad111e'); g.addColorStop(1, '#8f0c17');
+    c.fillStyle = g; c.fillRect(x, y, w, h);
+    c.fillStyle = 'rgba(255,235,232,.55)'; c.fillRect(x, y + 3, w, 1.5); c.fillRect(x, y + h - 4.5, w, 1.5);
+  };
+  const fronton = (y, act) => {
+    redBand(0, y, 1024, 64);
+    c.fillStyle = '#fff'; c.textBaseline = 'middle'; c.font = `600 36px ${DISP}`;
+    const w = spaced(c, 'MODE', 70, y + 33, 9, 'left');
+    c.fillStyle = 'rgba(255,255,255,.7)'; c.fillRect(70 + w + 28, y + 18, 2, 30);
+    const items = ['Femme', 'Homme', 'Enfant']; let x = 70 + w + 58;
+    items.forEach((t, i) => {
+      c.font = `${t === act ? 600 : 300} 25px ${TXT}`; c.fillStyle = t === act ? '#ffffff' : 'rgba(255,240,238,.82)';
+      c.textAlign = 'left'; c.fillText(t, x, y + 34);
+      const tw = c.measureText(t).width;
+      if (t === act) { c.fillRect(x, y + 50, tw, 2); }
+      x += tw;
+      if (i < 2) { c.fillStyle = 'rgba(255,255,255,.75)'; c.fillText('  ·  ', x, y + 34); x += c.measureText('  ·  ').width; }
+    });
+    c.textAlign = 'right'; c.font = `400 15px ${TXT}`; c.fillStyle = 'rgba(255,240,238,.85)';
+    spaced(c, 'COLLECTION HIVER', 960, y + 34, 3, 'right');
+  };
+  fronton(0, 'Femme'); fronton(64, 'Homme');
+  const band = (x, y, w, h, t, s) => {
+    redBand(x, y, w, h); c.fillStyle = '#fff'; c.textBaseline = 'middle';
+    c.font = `600 30px ${DISP}`; spaced(c, t, x + w / 2, y + h / 2 - 7, 7, 'center');
+    c.font = `400 12px ${TXT}`; c.fillStyle = 'rgba(255,240,238,.85)'; spaced(c, s, x + w / 2, y + h - 13, 2.5, 'center');
+  };
+  band(0, 128, 512, 72, 'ENFANT', 'MODE · 2 – 14 ANS'); band(512, 128, 512, 72, 'ACCESSOIRES', 'MAROQUINERIE · MAILLE');
+  const wall = (x, y, t) => {
+    redBand(x, y, 512, 80); c.fillStyle = '#fff'; c.textBaseline = 'middle'; c.font = `600 40px ${DISP}`;
+    spaced(c, t, x + 256, y + 42, t.length > 8 ? 6 : 12, 'center');
+  };
+  wall(0, 208, 'FEMME'); wall(512, 208, 'HOMME'); wall(0, 296, 'ENFANT'); wall(512, 296, 'ACCESSOIRES');
+
+  /* 2 et 3 — affiches des caissons lumineux (fictives, sans personnage) */
+  const poster = (variant) => {
+    c = mk();
+    const H = 632;
+    const g = c.createLinearGradient(0, 0, 1024, H);
+    if (variant === 0) { g.addColorStop(0, '#2c0d10'); g.addColorStop(1, '#0e0607'); }
+    else { g.addColorStop(0, '#efeae3'); g.addColorStop(1, '#cfc8bf'); }
+    c.fillStyle = g; c.fillRect(0, 0, 1024, 1024);
+    const drape = (pts, c0, c1, a) => {
+      const gr = c.createLinearGradient(pts[0], pts[1], pts[pts.length - 2], pts[pts.length - 1]);
+      gr.addColorStop(0, c0); gr.addColorStop(1, c1); c.globalAlpha = a; c.fillStyle = gr;
+      c.beginPath(); c.moveTo(pts[0], pts[1]);
+      for (let i = 2; i < pts.length; i += 6) c.bezierCurveTo(pts[i], pts[i + 1], pts[i + 2], pts[i + 3], pts[i + 4], pts[i + 5]);
+      c.closePath(); c.fill(); c.globalAlpha = 1;
+    };
+    const R0 = variant === 0 ? ['#e3303d', '#6c0710'] : ['#2a2a2c', '#0d0d0e'];
+    const R1 = variant === 0 ? ['#ff6b73', '#a10f1b'] : ['#6b6b70', '#1c1c1e'];
+    for (let i = 0; i < 6; i++) {
+      const o = i * 46;
+      drape([-50, 660, 120 + o, 420 - o * .4, 260 + o, 760, 420 + o * .8, 240 - o * .3, 520 + o, 120, 700 - o * .2, -40,
+        760 - o * .3, -40, 560, 220 + o * .5, 360 + o * .6, 380, 160, 700], i % 2 ? R0[0] : R1[0], i % 2 ? R0[1] : R1[1], 0.55);
+    }
+    c.strokeStyle = variant === 0 ? 'rgba(255,200,200,.35)' : 'rgba(255,255,255,.5)'; c.lineWidth = 2;
+    for (let i = 0; i < 9; i++) { c.beginPath(); c.moveTo(-20, 600 - i * 30); c.bezierCurveTo(220, 300 - i * 25, 380, 650 - i * 20, 640, 40 + i * 12); c.stroke(); }
+    const fg = variant === 0 ? '#f8f1ea' : '#141212';
+    c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+    c.fillStyle = '#b3121f'; c.fillRect(650, 150, 4, 300);
+    c.fillStyle = fg; c.font = `300 24px ${TXT}`; spaced(c, 'COLLECTION', 680, 205, 6, 'left');
+    c.font = `600 92px ${DISP}`; c.fillText(variant === 0 ? 'Hiver' : 'Homme', 674, 300);
+    c.font = `400 30px ${TXT}`; c.fillText(variant === 0 ? 'Laine & Cachemire' : 'Pardessus & Mailles', 680, 352);
+    c.font = `400 18px ${TXT}`; c.globalAlpha = .75; spaced(c, variant === 0 ? 'FEMME · ENFANT' : 'HOMME · ACCESSOIRES', 680, 400, 4, 'left'); c.globalAlpha = 1;
+    c.fillStyle = '#b3121f'; c.beginPath(); c.roundRect ? c.roundRect(680, 432, 150, 40, 20) : c.rect(680, 432, 150, 40); c.fill();
+    c.fillStyle = '#fff'; c.font = `500 17px ${TXT}`; spaced(c, 'NOUVEAU', 755, 459, 3, 'center');
+  };
+  poster(0); poster(1);
+
+  /* 4 — terrazzo poli (une dalle de 60 cm, joints dans l'alpha) */
+  c = mk();
+  c.fillStyle = '#e7e1d8'; c.fillRect(0, 0, 1024, 1024);
+  for (let i = 0; i < 3000; i++) {
+    c.fillStyle = `rgba(${200 + rng() * 30 | 0},${190 + rng() * 30 | 0},${178 + rng() * 30 | 0},.12)`;
+    c.fillRect(rng() * 1024, rng() * 1024, 18 * rng(), 18 * rng());
+  }
+  const chips = [['#cbc1b4', 30], ['#9b9086', 16], ['#b8ab9c', 22], ['#f6f2ec', 18], ['#6e655d', 8], ['#d6cdc1', 22], ['#a9443b', 2.5], ['#3e3a37', 3]];
+  const tot = chips.reduce((a, b) => a + b[1], 0);
+  for (let i = 0; i < 4200; i++) {
+    let r = rng() * tot, col = chips[0][0]; for (const ch of chips) { if ((r -= ch[1]) <= 0) { col = ch[0]; break; } }
+    const x = rng() * 1024, y = rng() * 1024, s = 2 + Math.pow(rng(), 2.2) * 13;
+    c.fillStyle = col; c.beginPath();
+    const nv = 4 + (rng() * 3 | 0); for (let v = 0; v < nv; v++) { const a = v / nv * 6.283 + rng() * .6, rr = s * (0.55 + rng() * 0.45); v ? c.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr) : c.moveTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
+    c.fill();
+  }
+  {
+    const cvs = cv[4], ctx = cvs.getContext('2d'), id = ctx.getImageData(0, 0, S, S), d = id.data, jw = Math.max(2, Math.round(3 * k));
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+      if (x < jw || y < jw || x >= S - jw || y >= S - jw) { const o = (y * S + x) * 4; d[o] = 150; d[o + 1] = 142; d[o + 2] = 133; d[o + 3] = 60; }
+    }
+    ctx.putImageData(id, 0, 0);
+  }
+
+  /* 5 — imprimés : boîtes à chaussures, coffrets, stop-rayon */
+  c = mk();
+  c.clearRect(0, 0, 1024, 1024);
+  c.fillStyle = '#f0ece6'; c.fillRect(0, 0, 1024, 92); c.fillRect(256, 96, 768, 92);
+  const box = (x, y, bg, fg, line, title, sub) => {
+    c.fillStyle = bg; c.fillRect(x, y, 256, 88);
+    c.strokeStyle = line; c.lineWidth = 2; c.strokeRect(x + 10, y + 10, 236, 68);
+    c.fillStyle = fg; c.textBaseline = 'middle'; c.font = `600 22px ${DISP}`; spaced(c, title, x + 128, y + 38, 6, 'center');
+    c.font = `400 11px ${TXT}`; spaced(c, sub, x + 128, y + 61, 2, 'center');
+  };
+  box(0, 0, '#141313', '#d9dbdf', '#8d9096', 'MODE', 'CHAUSSURES · 38');
+  box(256, 0, '#b89c78', '#1b1918', '#5d4a35', 'MODE', 'HOMME · 43');
+  box(512, 0, '#b3121f', '#ffffff', '#f2c6c9', 'MODE', 'ENFANT · 28');
+  const cof = (x, y, bg, rib, fg) => {
+    c.fillStyle = bg; c.fillRect(x, y, 256, 88);
+    c.fillStyle = rib; c.fillRect(x + 150, y, 14, 88);
+    c.fillStyle = fg; c.textBaseline = 'middle'; c.font = `600 19px ${DISP}`; spaced(c, 'COFFRET', x + 70, y + 38, 3, 'center');
+    c.font = `400 10px ${TXT}`; spaced(c, 'CADEAU', x + 70, y + 58, 3, 'center');
+  };
+  cof(768, 0, '#b3121f', '#d6d8dc', '#fff'); cof(256, 96, '#f1ede7', '#b3121f', '#1b1918'); cof(512, 96, '#9fd0e6', '#ffffff', '#1b1918');
+  c.save(); c.translate(128, 224);
+  c.fillStyle = '#d9dbdf'; c.beginPath(); c.arc(0, 0, 124, 0, 6.2832); c.fill();
+  c.fillStyle = '#b3121f'; c.beginPath(); c.arc(0, 0, 114, 0, 6.2832); c.fill();
+  c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = 1.5; c.beginPath(); c.arc(0, 0, 100, 0, 6.2832); c.stroke();
+  c.fillStyle = '#fff'; c.textBaseline = 'middle'; c.font = `600 40px ${DISP}`; spaced(c, 'Nouvelle', 0, -14, 1, 'center');
+  c.font = `400 19px ${TXT}`; spaced(c, 'COLLECTION', 0, 30, 4, 'center');
+  c.restore();
+
+  return cv;
+}
+
+/* =====================================================================
+   Construction de la scène
+   ===================================================================== */
+const LVL = [0.14, 0.40, 0.66, 0.92, 1.18, 1.40], TOP = 1.62;
+const PODS = [[-2.35, 2.0], [2.35, -2.0], [3.0, 1.25]];
+const SPOTS = [[-0.75, 3.02, 1.75], [0.75, 3.02, 1.75], [-0.75, 3.02, -1.75], [0.75, 3.02, -1.75]];
+const SPOT_T = [[-0.55, 0.8, 0.55], [0.55, 0.8, 0.55], [-0.55, 0.8, -0.55], [0.55, 0.8, -0.55]];
+
+let MAT;
+function initMaterials() {
+  MAT = {
+    rouge: M('#b3121f', { r: 0.28, cc: 1 }),
+    nacre: M('#eeeae3', { r: 0.34, cc: 0.55 }),
+    cannele: M('#131212', { r: 0.34, cc: 0.4, f: 6 }),
+    argent: M('#dadce0', { r: 0.16, m: 1 }),
+    argentB: M('#c9ccd1', { r: 0.3, m: 1, f: 7 }),
+    noir: M('#151414', { r: 0.38, cc: 0.5 }),
+    noirMat: M('#0e0e0e', { r: 0.6 }),
+    led: M('#fff3e2', { r: 0.4, e: 10 }),
+    panel: M('#fff6ea', { r: 0.5, e: 5.5 }),
+    lens: M('#fff1dc', { r: 0.2, e: 30 }),
+    wall: M('#dcd6ce', { r: 0.92 }),
+    ceil: M('#e7e4df', { r: 0.95 }),
+    dark: M('#3a3532', { r: 0.8 }),
+    glass: M([0.93, 0.975, 0.955], { r: 0.0, m: 0.012 }),
+    glassEdge: M([0.86, 0.95, 0.91], { r: 0.0, m: 0.25 }),
+    frontA: M('#ffffff', { L: 1, rect: BR.frontA, e: 1.25, r: 0.32, cc: 0.6 }),
+    frontB: M('#ffffff', { L: 1, rect: BR.frontB, e: 1.25, r: 0.32, cc: 0.6 }),
+    bandE: M('#ffffff', { L: 1, rect: BR.bandE, e: 1.25, r: 0.32, cc: 0.6 }),
+    bandW: M('#ffffff', { L: 1, rect: BR.bandW, e: 1.25, r: 0.32, cc: 0.6 }),
+    posterA: M('#ffffff', { L: 2, rect: [0, 0, 1, 632 / 1024], e: 2.0, r: 0.15, cc: 1 }),
+    posterB: M('#ffffff', { L: 3, rect: [0, 0, 1, 632 / 1024], e: 2.0, r: 0.15, cc: 1 }),
+    floor: M('#ffffff', { L: 4, r: 0.13 }),
+    disc: M('#ffffff', { L: 5, rect: PR.disc, r: 0.35, cc: 0.4, f: 15, e: 0.15 })
+  };
+}
+const fab = (col, f, r = 0.88) => M(col, { r, f });
+const tagM = (fam, l) => M('#ffffff', { L: 0, rect: tagRect(fam, l), r: 0.4, cc: 0.35 });
+const prM = (rect, r = 0.55) => M('#ffffff', { L: 5, rect, r, f: 9 });
+const shade = (col, k) => { const c = lin(col); return [c[0] * k, c[1] * k, c[2] * k]; };
+
+/* --- vêtements pliés --- */
+function stack(B, x, y, z, w, d, h, n, col, f, rng, o = {}) {
+  let yy = y;
+  for (let i = 0; i < n; i++) {
+    const hh = h * (0.9 + rng() * 0.2), sh = 0.93 + rng() * 0.12;
+    const m = M(shade(col, sh), { r: o.r ?? 0.88, f });
+    const ww = w * (0.97 + rng() * 0.05), dd = d * (0.97 + rng() * 0.05);
+    const xx = x + (rng() - 0.5) * 0.012, zz = z + (rng() - 0.5) * 0.012, ry = (o.ry || 0) + (rng() - 0.5) * 0.07;
+    rbox(B, ww, hh, dd, hh * 0.44, m, X([xx, yy + hh / 2, zz], ry));
+    if (o.collar && i === n - 1) {
+      rbox(B, ww * 0.42, 0.014, 0.05, 0.006, M(shade(col, sh * 0.92), { r: 0.75, f: 4 }), X([xx, yy + hh + 0.004, zz + dd / 2 - 0.05], ry));
+      rbox(B, 0.006, 0.006, 0.004, 0.002, M('#f4f2ee', { r: 0.3, cc: 0.6 }), X([xx, yy + hh + 0.008, zz + dd / 2 - 0.02], ry));
+    }
+    yy += hh * 0.96;
+  }
+  return yy;
+}
+/* --- chaussures --- */
+function shoe(B, T, len, kind, col, rng) {
+  B.push(T);
+  const leather = M(col, { r: kind === 'pump' ? 0.18 : 0.45, cc: kind === 'pump' ? 1 : 0.3, f: kind === 'pump' ? 0 : 8 });
+  const w = len * 0.36;
+  if (kind === 'sneaker') {
+    rbox(B, w, 0.024, len, 0.011, M('#f4f2ee', { r: 0.6 }), X([0, 0.012, 0]));
+    rbox(B, w * 0.92, 0.05, len * 0.9, 0.022, leather, X([0, 0.042, -len * 0.02]));
+    rbox(B, w * 0.85, 0.04, len * 0.36, 0.016, leather, X([0, 0.072, -len * 0.27]));
+    rbox(B, w * 0.32, 0.008, len * 0.32, 0.003, M('#ffffff', { r: 0.7 }), X([0, 0.068, len * 0.08]));
+  } else if (kind === 'derby') {
+    rbox(B, w, 0.016, len, 0.007, M('#2a1a12', { r: 0.5 }), X([0, 0.008, 0]));
+    rbox(B, w * 0.94, 0.05, len * 0.93, 0.022, leather, X([0, 0.038, 0]));
+    rbox(B, w * 0.5, 0.012, len * 0.3, 0.005, leather, X([0, 0.064, len * 0.04]));
+  } else {
+    const ang = 0.24;
+    rbox(B, w * 0.9, 0.006, len * 0.95, 0.003, M('#0b0b0b', { r: 0.4 }), X([0, 0.006 + Math.sin(ang) * len * 0.3, -len * 0.05], 0, 1, -ang));
+    rbox(B, w * 0.88, 0.032, len * 0.5, 0.014, leather, X([0, 0.017, len * 0.22], 0, 1, -0.08));
+    rbox(B, w * 0.86, 0.022, len * 0.28, 0.01, leather, X([0, 0.09, -len * 0.4], 0, 1, -0.2));
+    lathe(B, [[0, 0], [0.006, 0], [0.006, 0], [0.008, 0.075], [0, 0.075]], M('#0b0b0b', { r: 0.3, cc: 1 }), X([0, 0, -len * 0.44]), { seg: 10 });
+  }
+  B.pop();
+}
+function pair(B, x, y, z, ry, len, kind, col, rng) {
+  const sp = len * 0.21;
+  shoe(B, X([x - sp, y, z], ry + 0.06 + (rng() - 0.5) * 0.04), len, kind, col, rng);
+  shoe(B, X([x + sp, y, z + 0.012], ry - 0.05 + (rng() - 0.5) * 0.04), len, kind, col, rng);
+}
+/* --- maroquinerie & accessoires --- */
+function bag(B, x, y, z, ry, w, h, d, col) {
+  const lm = M(col, { r: 0.42, cc: 0.35, f: 8 });
+  B.push(X([x, y, z], ry));
+  rbox(B, w, h, d, Math.min(0.03, d * 0.4), lm, X([0, h / 2, 0]));
+  const P = []; for (let i = 0; i <= 12; i++) { const a = Math.PI * i / 12; P.push([Math.cos(a) * w * 0.26, h + Math.sin(a) * h * 0.38, 0]); }
+  tube(B, P, 0.006, lm, X([0, -0.004, d * 0.18]), 6); tube(B, P, 0.006, lm, X([0, -0.004, -d * 0.18]), 6);
+  rbox(B, 0.03, 0.02, 0.006, 0.003, MAT.argent, X([0, h * 0.82, d / 2 + 0.002]));
+  B.pop();
+}
+function beanie(B, x, y, z, r, col, pompom, rng) {
+  const m = fab(col, 1, 0.92);
+  const P = [[r * 1.02, 0], [r * 1.04, r * 0.32], [r * 0.99, r * 0.33], [r * 0.98, r * 0.6]];
+  for (let i = 1; i <= 6; i++) { const a = i / 6 * Math.PI / 2; P.push([Math.cos(a) * r * 0.98, r * 0.6 + Math.sin(a) * r * 0.82]); }
+  P[P.length - 1][0] = 0;
+  lathe(B, [[0, 0.0015], [r * 1.0, 0.0015]].concat(P), m, X([x, y, z], rng() * 6), { sz: 0.82 });
+  if (pompom) sphere(B, r * 0.36, fab(col === '#f4f2ee' ? '#b3121f' : '#f4f2ee', 5, 0.98), X([x, y + r * 1.48, z]), { k: 6, seg: 10 });
+}
+function scarf(B, x, y, z, ry, len, r, col) {
+  const h = len / 2;
+  lathe(B, [[0, -h], [r * 0.95, -h], [r, 0.006 - h], [r, h - 0.006], [r * 0.95, h], [0, h]], fab(col, 5, 0.95), X([x, y + r, z], ry, 1, 0, Math.PI / 2));
+}
+function belt(B, x, y, z, col) {
+  lathe(B, [[0.032, 0], [0.06, 0], [0.06, 0], [0.06, 0.034], [0.06, 0.034], [0.032, 0.034], [0.032, 0.034], [0.032, 0]], M(col, { r: 0.4, cc: 0.4, f: 8 }), X([x, y, z]));
+  rbox(B, 0.04, 0.036, 0.008, 0.002, MAT.argent, X([x, y + 0.017, z + 0.064]));
+}
+function coffret(B, x, y, z, ry, w, h, d, base, print) {
+  const fm = prM(print, 0.35);
+  rbox(B, w, h, d, 0.004, base, X([x, y + h / 2, z], ry), { faces: { '2,1': fm }, rs: 1 });
+  rbox(B, 0.022, 0.003, d + 0.002, 0.001, MAT.argent, X([x + w * 0.09, y + h + 0.001, z], ry), { rs: 1 });
+  const bowY = y + h + 0.008;
+  rbox(B, 0.05, 0.012, 0.02, 0.005, MAT.argent, X([x + w * 0.09 - 0.022, bowY, z], ry + 0.5), { rs: 1 });
+  rbox(B, 0.05, 0.012, 0.02, 0.005, MAT.argent, X([x + w * 0.09 + 0.022, bowY, z], ry - 0.5), { rs: 1 });
+}
+function shoeBox(B, x, y, z, ry, w, h, d, base, print) {
+  const fm = prM(print, 0.5);
+  rbox(B, w, h - 0.02, d, 0.002, base, X([x, y + (h - 0.02) / 2, z], ry), { faces: { '2,1': fm }, rs: 1 });
+  rbox(B, w + 0.006, 0.026, d + 0.006, 0.002, base, X([x, y + h - 0.013, z], ry), { rs: 1 });
+}
+
+/* --- vêtements suspendus (face-out) --- */
+const GARM = {
+  coat: { L: 0.70, b: 0.036, sh: 0.045, hw: t => 0.17 + 0.025 * sm(0.45, 1, t), sl: 0.6, btn: 4, lap: true },
+  jacket: { L: 0.58, b: 0.032, sh: 0.05, hw: t => 0.168 + 0.008 * t, sl: 0.55, btn: 2, lap: true },
+  dress: { L: 0.72, b: 0.026, sh: 0.03, hw: t => t < 0.3 ? 0.12 - 0.02 * sm(0, 0.3, t) : 0.10 + 0.15 * sm(0.3, 1, t), sl: 0, btn: 0, pleat: true },
+  shirt: { L: 0.62, b: 0.022, sh: 0.045, hw: t => 0.16, sl: 0.58, btn: 5, coll: true },
+  blouse: { L: 0.56, b: 0.022, sh: 0.04, hw: t => 0.145 + 0.02 * t, sl: 0.42, btn: 0, pleat: true }
+};
+function garment(B, type, mat, T, seed, sc = 1) {
+  const G = GARM[type], rng = RNG(seed), ph1 = rng() * 6, ph2 = rng() * 6, nu = Q.gu, nv = Q.gv, L = G.L * sc;
+  B.push(T);
+  const ytop = x => -G.sh * sc * sm(0.035 * sc, 0.16 * sc, Math.abs(x)) - 0.03 * sc * Math.max(0, 1 - (x / (0.06 * sc)) ** 2);
+  const bul = (s, t) => G.b * sc * Math.sqrt(Math.max(0, 1 - s * s)) * (0.5 + 0.5 * Math.sin(Math.PI * Math.min(1, t * 1.25)));
+  for (const side of [1, -1]) {
+    const P = [];
+    for (let j = 0; j <= nv; j++) for (let i = 0; i <= nu; i++) {
+      const t = j / nv, s = i / nu * 2 - 1, w = G.hw(t) * sc, x = s * w;
+      const y = lerp(ytop(x), -L - 0.008 * sc * s * s, t);
+      const fold = (0.0055 * Math.sin(x / sc * 30 + ph1 + t * 2) + 0.003 * Math.sin(x / sc * 71 + ph2)) * Math.pow(t, 1.5) * sc * (G.pleat ? 2.1 : 1);
+      const b = bul(s, t);
+      P.push([x, y, fold + (side > 0 ? b : -b * 0.65)]);
+    }
+    const base = B.vn, row = nu + 1;
+    for (let j = 0; j <= nv; j++) for (let i = 0; i <= nu; i++) {
+      const p = P[j * row + i];
+      const pl = P[j * row + Math.max(0, i - 1)], pr = P[j * row + Math.min(nu, i + 1)];
+      const pu = P[Math.max(0, j - 1) * row + i], pd = P[Math.min(nv, j + 1) * row + i];
+      let n = norm(cross(sub(pd, pu), sub(pr, pl)));
+      if (side < 0) n = scl(n, -1);
+      B.vert(p, n, p[0], p[1], mat);
+    }
+    B.grid(base, nu, nv);
+  }
+  const hw0 = G.hw(0) * sc;
+  if (G.sl) {
+    const len = G.sl * sc, r = 0.044 * sc;
+    for (const sx of [-1, 1]) {
+      lathe(B, [[0, 0], [r * 1.08, 0], [r * 1.1, 0.012 * sc], [r, 0.03 * sc], [r * 1.05, len * 0.6], [r * 1.12, len - 0.03 * sc], [r * 0.7, len], [0, len]], mat,
+        X([sx * (hw0 - 0.012 * sc), -G.sh * sc - 0.01 * sc - len, 0.008 * sc], 0, 1, 0, sx * 0.04), { sz: 0.62, seg: Math.max(8, Q.seg >> 1) });
+    }
+  }
+  const dark = M(mat.c.map(v => v * 0.6), { r: mat.r, f: mat.f });
+  if (G.lap) {
+    for (const sx of [-1, 1]) tube(B, [[sx * 0.065 * sc, -0.028 * sc, 0.006 * sc], [sx * 0.04 * sc, -0.13 * sc, G.b * sc * 0.75], [sx * 0.004 * sc, -0.24 * sc, G.b * sc * 0.95]], 0.005 * sc, dark, XI, 5);
+  }
+  if (G.coll) {
+    tube(B, [[-0.07 * sc, -0.022 * sc, 0.004], [-0.035 * sc, -0.07 * sc, G.b * sc * 0.7], [0, -0.05 * sc, G.b * sc * 0.75], [0.035 * sc, -0.07 * sc, G.b * sc * 0.7], [0.07 * sc, -0.022 * sc, 0.004]], 0.006 * sc, mat, XI, 5);
+  }
+  if (G.btn) {
+    const bm = type === 'shirt' ? M('#f6f4f0', { r: 0.3, cc: 0.8 }) : M('#1a1716', { r: 0.25, cc: 1 });
+    for (let k = 0; k < G.btn; k++) {
+      const t = (0.2 + k * 0.13) * (type === 'shirt' ? 0.9 : 1), z = G.b * sc * (0.5 + 0.5 * Math.sin(Math.PI * Math.min(1, t * 1.25))) + 0.002;
+      lathe(B, [[0, 0], [0.008 * sc, 0], [0.008 * sc, 0.003], [0, 0.0035]], bm, X([0.018 * sc, lerp(-0.03, -L, t) , z], 0, 1, Math.PI / 2), { seg: 8 });
+    }
+  }
+  B.pop();
+}
+function hanger(B, T, sc, wood) {
+  B.push(T);
+  const m = wood ? M('#6b4a2f', { r: 0.4, cc: 0.6 }) : MAT.noir;
+  const P = []; for (let i = 0; i <= 10; i++) { const s = i / 10 * 2 - 1; P.push([s * 0.19 * sc, -0.048 * sc * sm(0, 1, Math.abs(s)) - 0.004, 0]); }
+  tube(B, P, 0.0075 * sc, m, XI, 6);
+  const H = [[0, -0.004, 0], [0, 0.03, 0], [-0.006, 0.05, 0]];
+  for (let i = 0; i <= 8; i++) { const a = Math.PI - i / 8 * (Math.PI + 0.7); H.push([Math.cos(a) * 0.0135, 0.062 + Math.sin(a) * 0.0135, 0]); }
+  tube(B, H, 0.0018, MAT.argent, XI, 5);
+  B.pop();
+}
+/* --- mannequins couture (bustes) --- */
+function dressForm(B, x, z, ry, kind) {
+  const ch = kind === 'enfant', male = kind === 'homme', sc = ch ? 0.64 : 1, sw = male ? 1.1 : 1;
+  B.push(X([x, 0, z], ry));
+  lathe(B, [[0, 0], [0.42, 0], [0.42, 0.0], [0.42, 0.105], [0.42, 0.105], [0.405, 0.12], [0, 0.12]], MAT.nacre, XI, { seg: Q.seg * 2 });
+  lathe(B, [[0.4215, 0.07], [0.4215, 0.09]], MAT.rouge, XI, { seg: Q.seg * 2 });
+  const hip = ch ? 0.12 + 0.48 : male ? 0.12 + 0.86 : 0.12 + 0.80;
+  lathe(B, [[0, 0.12], [0.06, 0.12], [0.06, 0.12], [0.05, 0.135], [0.013, 0.14], [0.013, hip], [0, hip]], MAT.argent, XI, { seg: 16 });
+  const F = male ? [[0, -0.02], [0.12, -0.02], [0.16, 0.03], [0.165, 0.12], [0.155, 0.25], [0.16, 0.33], [0.174, 0.42], [0.18, 0.48], [0.172, 0.53], [0.138, 0.575], [0.08, 0.6], [0.055, 0.61], [0.052, 0.67], [0.058, 0.675], [0, 0.685]]
+    : [[0, -0.02], [0.11, -0.02], [0.155, 0.03], [0.168, 0.12], [0.152, 0.22], [0.124, 0.3], [0.13, 0.35], [0.155, 0.42], [0.158, 0.47], [0.146, 0.52], [0.115, 0.565], [0.07, 0.59], [0.05, 0.6], [0.047, 0.655], [0.054, 0.66], [0, 0.67]];
+  lathe(B, F.map(p => [p[0] * sc, p[1] * sc]), M('#efe9e1', { r: 0.6, f: 3 }), X([0, hip, 0]), { sz: 0.72 });
+  lathe(B, [[0, 0], [0.055 * sc, 0], [0.055 * sc, 0.008], [0, 0.01]], MAT.argent, X([0, hip + F[F.length - 1][1] * sc, 0]), { seg: 16 });
+  const coat = ch ? [[0.17, -0.06], [0.178, -0.06], [0.175, 0.05], [0.168, 0.15], [0.155, 0.27], [0.162, 0.38], [0.168, 0.45], [0.16, 0.51], [0.14, 0.555], [0.10, 0.585], [0.064, 0.605], [0.062, 0.63]]
+    : [[0.172, -0.255], [0.186, -0.26], [0.183, -0.1], [0.179, 0.05], [0.173, 0.15], [0.16, 0.25], [0.153, 0.31], [0.165, 0.38], [0.172, 0.45], [0.167, 0.51], [0.142, 0.555], [0.10, 0.585], [0.064, 0.605], [0.06, 0.628]];
+  const gcol = ch ? '#e4b23f' : male ? '#3a3d42' : '#b3121f';
+  const gm = fab(gcol, ch ? 1 : 5, 0.9);
+  lathe(B, coat.map(p => [p[0] * sc * sw, p[1] * sc]), gm, X([0, hip, 0]), { sz: 0.76 });
+  if (!ch) {
+    const bm = M('#151414', { r: 0.25, cc: 1 });
+    for (let k = 0; k < 4; k++) {
+      const yy = (0.36 - k * 0.12) * sc, rr = 0.172 * sw * 0.76 * sc;
+      lathe(B, [[0, 0], [0.009, 0], [0.009, 0.003], [0, 0.004]], bm, X([0.03, hip + yy, rr + 0.001], 0, 1, Math.PI / 2), { seg: 8 });
+    }
+    tube(B, [[-0.07 * sw, hip + 0.6, 0.03], [-0.05 * sw, hip + 0.48, 0.12], [-0.01, hip + 0.33, 0.135]], 0.006, M(gm.c.map(v => v * 0.6), { r: 0.9 }), XI, 5);
+    tube(B, [[0.07 * sw, hip + 0.6, 0.03], [0.05 * sw, hip + 0.48, 0.12], [0.01, hip + 0.33, 0.135]], 0.006, M(gm.c.map(v => v * 0.6), { r: 0.9 }), XI, 5);
+  } else {
+    lathe(B, [[0.15, -0.065], [0.17, -0.065]], gm, X([0, hip, 0]), { sz: 0.76 });
+  }
+  B.pop();
+}
+/* --- décor du magasin --- */
+const PAL = {
+  F: ['#efe6d8', '#c49a6c', '#d9a5a0', '#6e1f2a', '#9a9a9a', '#1c1c1c', '#b3121f', '#f4f2ee'],
+  H: ['#1f2a44', '#3a3d42', '#5a5f3c', '#f4f2ee', '#b9cde3', '#6b4a33', '#8a8d91', '#b3121f'],
+  E: ['#e9b949', '#8cc3e3', '#9fd6c0', '#ef8a74', '#b3121f', '#f4f2ee', '#1f2a44', '#f2b8c6'],
+  A: ['#6b4a33', '#1c1c1c', '#b3121f', '#c49a6c', '#3a3d42', '#efe6d8', '#8a2433', '#9a9a9a']
+};
+function wallRun(B, o, ry, len, pal, rng, label) {
+  B.push(X(o, ry));
+  const n = Math.floor(len / 1.2), x0 = -n * 1.2 / 2;
+  rbox(B, n * 1.2, 2.3, 0.03, 0, MAT.dark, X([0, 1.18, 0.015]));
+  rbox(B, len + 0.4, 0.09, 0.012, 0, MAT.noirMat, X([0, 0.045, 0.006]));
+  for (let i = 0; i <= n; i++) rbox(B, 0.03, 2.3, 0.4, 0, MAT.nacre, X([x0 + i * 1.2, 1.18, 0.2]));
+  for (let i = 0; i < n; i++) {
+    const cx = x0 + 1.2 * (i + 0.5);
+    for (const k of [0.1, 0.52, 0.94, 1.36, 1.78]) {
+      rbox(B, 1.17, 0.025, 0.38, 0, MAT.nacre, X([cx, k, 0.21]));
+      for (let s = 0; s < 3; s++) {
+        const h = 0.12 + rng() * 0.14, col = pal[(rng() * pal.length) | 0];
+        rbox(B, 0.31, h, 0.28, 0.02, M(shade(col, 0.9 + rng() * 0.15), { r: 0.92 }), X([cx - 0.38 + s * 0.38, k + 0.0125 + h / 2, 0.21], (rng() - 0.5) * 0.06), { rs: 1 });
+      }
+    }
+    if (i % 2 === 0) for (let s = 0; s < 4; s++) {
+      const col = pal[(rng() * pal.length) | 0];
+      rbox(B, 0.22, 0.14, 0.15, 0.01, M(shade(col, 0.95), { r: 0.6, cc: 0.3 }), X([cx - 0.42 + s * 0.28, 2.2 + 0.07, 0.2], 0), { rs: 1 });
+    }
+  }
+  rbox(B, len, 0.42, 0.05, 0.004, MAT.rouge, X([0, 2.62, 0.03]), { rs: 1 });
+  quad(B, 2.56, 0.4, M('#ffffff', { L: 1, rect: BR[label], e: 1.4, r: 0.32, cc: 0.5 }), X([0, 2.62, 0.0565]));
+  B.pop();
+}
+function roundRack(B, x, z, pal, rng) {
+  lathe(B, [[0, 0], [0.34, 0], [0.34, 0], [0.34, 0.025], [0.3, 0.035], [0, 0.035]], MAT.noir, X([x, 0, z]));
+  lathe(B, [[0.016, 0.03], [0.016, 1.36], [0, 1.36]], MAT.argent, X([x, 0, z]), { seg: 10 });
+  const P = []; for (let i = 0; i <= 40; i++) { const a = i / 40 * Math.PI * 2; P.push([x + Math.cos(a) * 0.5, 1.35, z + Math.sin(a) * 0.5]); }
+  tube(B, P, 0.012, MAT.argent, XI, 8);
+  for (let s = 0; s < 4; s++) { const a = s * Math.PI / 2; tube(B, [[x, 1.35, z], [x + Math.cos(a) * 0.5, 1.35, z + Math.sin(a) * 0.5]], 0.008, MAT.argent, XI, 6); }
+  const N = 26;
+  for (let k = 0; k < N; k++) {
+    const a = (k + rng() * 0.3) / N * Math.PI * 2, col = pal[(rng() * pal.length) | 0], h = 0.62 + rng() * 0.12;
+    rbox(B, 0.44, h, 0.04, 0.018, M(shade(col, 0.9 + rng() * 0.15), { r: 0.9, f: 0 }), X([x + Math.cos(a) * 0.5, 1.31 - h / 2, z + Math.sin(a) * 0.5], -a), { rs: 1 });
+  }
+}
+function table(B, x, z, ry, pal, rng) {
+  B.push(X([x, 0, z], ry));
+  rbox(B, 1.3, 0.72, 0.7, 0.01, MAT.nacre, X([0, 0.36, 0]), { rs: 1 });
+  rbox(B, 1.44, 0.04, 0.82, 0.008, MAT.noir, X([0, 0.74, 0]), { rs: 1 });
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++) {
+    const col = pal[(rng() * pal.length) | 0];
+    stack(B, -0.45 + i * 0.45, 0.76, -0.18 + j * 0.36, 0.32, 0.28, 0.045, 3 + (rng() * 3 | 0), col, 0, rng);
+  }
+  B.pop();
+}
+function spotBody(B, p, t) {
+  const d = norm(sub(t, p)), ry = Math.atan2(d[0], d[2]), tilt = Math.acos(clamp(-d[1], -1, 1));
+  const T = X(p, ry, 1, -tilt);
+  lathe(B, [[0, 0.002], [0.046, 0.002], [0.046, 0.002], [0.05, 0.02], [0.05, 0.15], [0.032, 0.17], [0, 0.172]], MAT.noir, T, { seg: 16 });
+  lathe(B, [[0, 0.001], [0.04, 0.001]], MAT.lens, T, { seg: 16 });
+  tube(B, [[p[0], 3.16, p[2]], add(p, scl(d, -0.16))], 0.008, MAT.noir, XI, 6);
+}
+
+/* --- la tête de gondole --- */
+function fixture(S, G, rng) {
+  const m = MAT;
+  rbox(S, 2.94, 0.03, 1.14, 0, m.noirMat, X([0, 0.015, 0]));
+  rbox(S, 3.0, 0.11, 1.2, 0.008, m.rouge, X([0, 0.085, 0]), { rs: 2 });
+  for (const sz of [1, -1]) rbox(S, 3.004, 0.004, 0.006, 0, m.argent, X([0, 0.1405, 0.6 * sz]));
+  for (const sx of [1, -1]) rbox(S, 0.006, 0.004, 1.204, 0, m.argent, X([1.5 * sx, 0.1405, 0]));
+  rbox(S, 2.2, 1.48, 0.04, 0, m.cannele, X([0, 0.88, 0]));
+  for (const sx of [1, -1]) {
+    rbox(S, 0.04, 1.48, 1.25, 0.003, m.nacre, X([1.1 * sx, 0.88, 0]), { rs: 1 });
+    rbox(S, 0.006, 1.44, 1.17, 0, m.cannele, X([1.123 * sx, 0.88, 0]), { faces: {} });
+    for (const sz of [1, -1]) rbox(S, 0.38, 1.48, 0.025, 0.003, m.nacre, X([1.31 * sx, 0.88, 0.6125 * sz]), { rs: 1 });
+    rbox(S, 0.02, 1.48, 1.2, 0.002, m.nacre, X([0.367 * sx, 0.88, 0]), { rs: 1 });
+    rbox(S, 0.38, 1.48, 0.02, 0.002, m.nacre, X([1.31 * sx, 0.88, 0]), { rs: 1 });
+  }
+  rbox(S, 3.0, 0.03, 1.25, 0.004, m.nacre, X([0, 1.635, 0]), { rs: 1 });
+  rbox(S, 3.012, 0.006, 1.212, 0, m.argent, X([0, 1.653, 0]));
+  rbox(S, 3.0, 0.19, 1.2, 0.004, m.rouge, X([0, 1.751, 0]), { rs: 1 });
+  rbox(S, 3.012, 0.006, 1.212, 0, m.argent, X([0, 1.849, 0]));
+  quad(S, 2.8, 0.175, m.frontA, X([0, 1.751, 0.6015]));
+  quad(S, 2.8, 0.175, m.frontB, X([0, 1.751, -0.6015], Math.PI));
+  quad(S, 1.12, 0.158, m.bandE, X([1.5015, 1.751, 0], Math.PI / 2));
+  quad(S, 1.12, 0.158, m.bandW, X([-1.5015, 1.751, 0], -Math.PI / 2));
+
+  const REG = [
+    { fam: 'F', ry: 0, kind: 'face', zb: 0.02, zf: 0.6, bays: [[-1.08, -0.377], [-0.357, 0.357], [0.377, 1.08]], poster: m.posterA },
+    { fam: 'H', ry: Math.PI, kind: 'face', zb: 0.02, zf: 0.6, bays: [[-1.08, -0.377], [-0.357, 0.357], [0.377, 1.08]], poster: m.posterB },
+    { fam: 'E', ry: Math.PI / 2, kind: 'end', zb: 1.12, zf: 1.5, bays: [[-0.6, -0.01], [0.01, 0.6]] },
+    { fam: 'A', ry: -Math.PI / 2, kind: 'end', zb: 1.12, zf: 1.5, bays: [[-0.6, -0.01], [0.01, 0.6]], glass: true }
+  ];
+  for (const R of REG) region(S, G, R, rng);
+}
+function region(S, G, R, rng) {
+  const m = MAT, T = X([0, 0, 0], R.ry);
+  S.push(T); G.push(T);
+  const zf = R.zf, zb = R.zb, dz = zf - zb;
+  R.bays.forEach((bay, bi) => {
+    const [x0, x1] = bay, cx = (x0 + x1) / 2, bw = x1 - x0, hang = R.kind === 'face' && bi === 1;
+    for (let k = 0; k < 6; k++) {
+      const y = LVL[k], yTop = k < 5 ? LVL[k + 1] - 0.025 : TOP;
+      if (k > 0 && !hang) {
+        if (R.glass) {
+          rbox(G, bw - 0.01, 0.01, dz - 0.02, 0, m.glass, X([cx, y - 0.005, (zf + zb) / 2 - 0.005]), { faces: { '0,1': m.glassEdge, '0,-1': m.glassEdge, '2,1': m.glassEdge, '2,-1': m.glassEdge } });
+          for (const sx of [-1, 1]) rbox(S, 0.02, 0.016, 0.06, 0.002, m.argent, X([cx + sx * (bw / 2 - 0.03), y - 0.018, zb + 0.04]), { rs: 1 });
+          rbox(S, bw - 0.03, 0.012, 0.014, 0.003, m.argent, X([cx, y - 0.016, zf - 0.03]), { rs: 1 });
+        } else {
+          rbox(S, bw, 0.025, dz, 0.003, m.nacre, X([cx, y - 0.0125, (zf + zb) / 2]), { rs: 1 });
+        }
+      }
+      if (!hang || k === 0) {
+        rbox(S, bw, 0.034, 0.004, 0, m.argentB, X([cx, y - 0.014, zf + 0.002]));
+        quad(S, 0.096, 0.03, tagM(R.fam, hang ? 6 : k), X([x0 + 0.075, y - 0.014, zf + 0.0045]));
+      }
+      if (!hang) rbox(S, bw - 0.03, 0.006, 0.012, 0, m.led, X([cx, yTop - 0.004, zf - 0.032]));
+      if (!hang) merch(S, R, k, x0, x1, cx, bw, y, yTop, zf, zb, rng, bi);
+      else if (k === 0) {
+        const pr = R.fam === 'F' ? PR.coffret : PR.coffret2, base = R.fam === 'F' ? m.rouge : M('#f1ede7', { r: 0.4, cc: 0.5 });
+        for (let i = 0; i < 3; i++) coffret(S, cx - 0.22 + i * 0.22, y, zf - 0.12, (rng() - 0.5) * 0.08, 0.19, 0.075, 0.16, base, pr);
+        coffret(S, cx, y + 0.075, zf - 0.13, 0.12, 0.19, 0.07, 0.16, base, pr);
+      }
+    }
+    if (hang) {
+      rbox(S, bw, 0.44, 0.56, 0.004, m.nacre, X([cx, 1.40, 0.31]), { rs: 1 });
+      quad(S, 0.66, 0.41, R.poster, X([cx, 1.40, 0.5905]));
+      for (const sy of [-1, 1]) rbox(S, 0.676, 0.008, 0.006, 0, m.argent, X([cx, 1.40 + sy * 0.209, 0.591]));
+      for (const sx of [-1, 1]) rbox(S, 0.008, 0.426, 0.006, 0, m.argent, X([cx + sx * 0.334, 1.40, 0.591]));
+      rbox(S, bw - 0.03, 0.006, 0.012, 0, m.led, X([cx, 1.176, 0.55]));
+      hangBay(S, R.fam, cx, rng);
+    }
+  });
+  /* stop-rayon « Nouvelle collection » */
+  if (R.fam !== 'A') {
+    const b = R.bays[R.bays.length - 1], k = R.fam === 'E' ? 3 : 3, x = b[1] - 0.06, y = LVL[k];
+    rbox(S, 0.006, 0.008, 0.075, 0.002, m.argent, X([x, y - 0.014, zf + 0.04]), { rs: 1 });
+    quad(S, 0.12, 0.12, m.disc, X([x, y - 0.03, zf + 0.085], 0.75));
+    quad(S, 0.12, 0.12, m.disc, X([x, y - 0.03, zf + 0.085], 0.75 + Math.PI));
+  }
+  S.pop(); G.pop();
+}
+function hangBay(S, fam, cx, rng) {
+  const y0 = 1.16, z0 = 0.03, z1 = 0.48, slope = 0.04 / (z1 - z0);
+  tube(S, [[cx, y0, z0], [cx, y0 - (z1 - z0) * slope, z1]], 0.006, MAT.argent, XI, 8);
+  rbox(S, 0.06, 0.08, 0.012, 0.003, MAT.argent, X([cx, y0 - 0.01, 0.026]), { rs: 1 });
+  sphere(S, 0.011, MAT.argent, X([cx, y0 - (z1 - z0) * slope, z1]), { k: 6, seg: 10 });
+  const list = fam === 'F' ? [['dress', '#141313', 3], ['blouse', '#efe6d8', 4], ['coat', '#b3121f', 5]]
+    : [['shirt', '#b9cde3', 4], ['jacket', '#1f2a44', 1], ['coat', '#3a3d42', 5]];
+  const zs = [0.17, 0.29, 0.41];
+  list.forEach((g, i) => {
+    const z = zs[i], rodY = y0 - (z - z0) * slope, sy = rodY - 0.068;
+    sphere(S, 0.007, MAT.argent, X([cx, rodY + 0.006, z + 0.03]), { k: 5, seg: 8 });
+    const T = X([cx, sy, z], (rng() - 0.5) * 0.06);
+    garment(S, g[0], fab(g[1], g[2], g[2] === 4 ? 0.7 : 0.88), T, 100 + i * 17 + (fam === 'H' ? 50 : 0));
+    hanger(S, X([cx, sy + 0.0055, z]), 1, fam === 'H');
+  });
+}
+function merch(S, R, k, x0, x1, cx, bw, y, yTop, zf, zb, rng, bi) {
+  const f = R.fam, P = PAL[f], two = i => x0 + bw * (i + 0.5) / 2, three = i => x0 + bw * (i + 0.5) / 3;
+  const pick = () => P[(rng() * P.length) | 0];
+  const front = d => zf - 0.03 - d / 2;
+  if (f === 'F' || f === 'H') {
+    if (k === 0) {
+      rbox(S, bw - 0.04, 0.06, 0.2, 0.004, MAT.nacre, X([cx, y + 0.03, zb + 0.14]), { rs: 1 });
+      for (let i = 0; i < 2; i++) shoeBox(S, two(i), y + 0.06, zb + 0.14, (rng() - 0.5) * 0.04, 0.3, 0.12, 0.19,
+        f === 'F' ? MAT.noir : M('#b89c78', { r: 0.8, f: 9 }), f === 'F' ? PR.shoeF : PR.shoeH);
+      const cols = f === 'F' ? ['#b3121f', '#141313'] : ['#5a3622', '#f4f2ee'];
+      for (let i = 0; i < 2; i++) pair(S, two(i), y, zf - 0.15, (rng() - 0.5) * 0.15, f === 'F' ? 0.24 : 0.28,
+        f === 'F' ? 'pump' : (i ? 'sneaker' : 'derby'), cols[i], rng);
+    } else if (k === 1) {
+      const den = f === 'F' ? ['#3b5378', '#5b7aa3', '#1e2a44', '#7a96bd'] : ['#1e2a44', '#232325', '#3a4a66', '#555c66'];
+      for (let i = 0; i < 2; i++) stack(S, two(i), y, front(0.3), 0.31, 0.3, 0.042, 4, den[(bi * 2 + i) % 4], 2, rng);
+    } else if (k === 2) {
+      if (f === 'F') { const t = ['#f4f2ee', '#141313', '#b7b7b4', '#e5b9b5', '#b3121f', '#efe6d8']; for (let i = 0; i < 2; i++) stack(S, two(i), y, front(0.26), 0.28, 0.26, 0.026, 6, t[(bi * 2 + i) % 6], 3, rng); }
+      else { const t = ['#f4f2ee', '#b9cde3', '#dfe6ee', '#f1e9dc']; for (let i = 0; i < 2; i++) stack(S, two(i), y, front(0.3), 0.25, 0.3, 0.032, 5, t[(bi * 2 + i) % 4], 4, rng, { collar: true, r: 0.7 }); }
+    } else if (k === 3) {
+      const t = f === 'F' ? ['#efe6d8', '#c49a6c', '#6e1f2a', '#d9a5a0'] : ['#1f2a44', '#8a8d91', '#5a5f3c', '#6e1f2a'];
+      for (let i = 0; i < 2; i++) stack(S, two(i), y, front(0.3), 0.32, 0.3, 0.046, 4, t[(bi * 2 + i) % 4], 1, rng);
+    } else if (k === 4) {
+      const t = f === 'F' ? ['#f3ede4', '#9a9a9a', '#1c1c1c', '#c49a6c'] : ['#a9a9a6', '#1c1c1c', '#6e1f2a', '#3a3d42'];
+      for (let i = 0; i < 2; i++) stack(S, two(i), y, front(0.3), 0.32, 0.3, 0.05, 3, t[(bi * 2 + i) % 4], f === 'F' ? 5 : 3, rng);
+    } else {
+      if (f === 'F') { const t = ['#b3121f', '#1c1c1c', '#c49a6c', '#efe6d8']; for (let i = 0; i < 2; i++) bag(S, two(i), y, front(0.11) - 0.04, (rng() - 0.5) * 0.25, 0.25, 0.125, 0.11, t[(bi * 2 + i) % 4]); }
+      else if (bi === 0) { const t = ['#1f2a44', '#b3121f', '#8a8d91']; for (let i = 0; i < 3; i++) beanie(S, three(i), y, front(0.16), 0.085, t[i], false, rng); }
+      else { const t = ['#6e1f2a', '#8a8d91', '#1f2a44']; for (let i = 0; i < 3; i++) scarf(S, cx - 0.12 + 0.12 * i, y, front(0.24), Math.PI / 2 + (rng() - .5) * 0.1, 0.24, 0.045, t[i]); }
+    }
+  } else if (f === 'E') {
+    if (k === 0) {
+      rbox(S, bw - 0.04, 0.05, 0.14, 0.004, MAT.nacre, X([cx, y + 0.025, zb + 0.09]), { rs: 1 });
+      shoeBox(S, cx, y + 0.05, zb + 0.095, 0.02, 0.24, 0.1, 0.15, MAT.rouge, PR.shoeE);
+      const c = ['#8cc3e3', '#ef8a74']; pair(S, cx - 0.12, y, zf - 0.1, (rng() - .5) * 0.2, 0.17, 'sneaker', c[bi], rng);
+      pair(S, cx + 0.14, y, zf - 0.1, (rng() - .5) * 0.2, 0.17, 'sneaker', c[1 - bi], rng);
+    } else if (k === 1) { const t = ['#5b7aa3', '#3b5378', '#7a96bd', '#1e2a44']; for (let i = 0; i < 2; i++) stack(S, two(i), y, front(0.2), 0.22, 0.2, 0.035, 4, t[bi * 2 + i], 2, rng); }
+    else if (k === 2) { const t = ['#e9b949', '#8cc3e3', '#ef8a74', '#9fd6c0']; for (let i = 0; i < 2; i++) stack(S, two(i), y, front(0.18), 0.2, 0.18, 0.022, 7, t[bi * 2 + i], 3, rng); }
+    else if (k === 3) { const t = ['#b3121f', '#1f2a44', '#f2b8c6', '#9a9a9a']; for (let i = 0; i < 2; i++) stack(S, two(i), y, front(0.2), 0.22, 0.2, 0.045, 4, t[bi * 2 + i], 3, rng); }
+    else if (k === 4) { const t = ['#f4f2ee', '#e9b949', '#9fd6c0', '#f2b8c6']; for (let i = 0; i < 2; i++) stack(S, two(i), y, front(0.19), 0.21, 0.19, 0.04, 4, t[bi * 2 + i], 1, rng); }
+    else { const t = ['#e9b949', '#b3121f', '#8cc3e3', '#f4f2ee', '#9fd6c0', '#ef8a74']; for (let i = 0; i < 3; i++) beanie(S, three(i), y, front(0.13), 0.068, t[bi * 3 + i], true, rng); }
+  } else {
+    if (k === 0) { coffret(S, cx - 0.12, y, front(0.17), (rng() - .5) * 0.1, 0.22, 0.09, 0.17, MAT.rouge, PR.coffret); coffret(S, cx + 0.14, y, front(0.17), (rng() - .5) * 0.1, 0.22, 0.08, 0.17, M('#9fd0e6', { r: 0.4, cc: 0.5 }), PR.coffretE); }
+    else if (k === 1) { for (let i = 0; i < 3; i++) belt(S, three(i), y, front(0.13), P[i + bi * 3]); }
+    else if (k === 2) {
+      for (let i = 0; i < 2; i++) {
+        const gm = M(['#1c1c1c', '#6b4a33', '#8a2433', '#3a3d42'][bi * 2 + i], { r: 0.45, cc: 0.3, f: 8 });
+        rbox(S, 0.1, 0.018, 0.21, 0.008, gm, X([two(i) - 0.03, y + 0.009, front(0.21)], 0.12));
+        rbox(S, 0.1, 0.018, 0.21, 0.008, gm, X([two(i) + 0.02, y + 0.025, front(0.21) + 0.01], -0.08));
+      }
+    } else if (k === 3) { for (let i = 0; i < 3; i++) scarf(S, three(i), y, front(0.25), Math.PI / 2 + (rng() - .5) * 0.08, 0.25, 0.045, P[(bi * 3 + i + 2) % P.length]); }
+    else if (k === 4) { const t = ['#efe6d8', '#1c1c1c', '#b3121f', '#8a8d91', '#c49a6c', '#3a3d42']; for (let i = 0; i < 3; i++) beanie(S, three(i), y, front(0.15), 0.08, t[bi * 3 + i], false, rng); }
+    else { const t = ['#b3121f', '#1c1c1c', '#c49a6c', '#6e1f2a']; for (let i = 0; i < 2; i++) bag(S, two(i), y, front(0.06), (rng() - .5) * 0.2, 0.22, 0.12, 0.05, t[bi * 2 + i]); }
+  }
+}
+function buildScene() {
+  initMaterials();
+  const rng = RNG(20261117), S = new MB(), F = new MB(), G = new MB();
+  /* environnement (ne projette pas d'ombre dans les cartes d'ombre des projecteurs) */
+  rbox(S, 14.4, 3.4, 0.1, 0, MAT.wall, X([0, 1.6, -6.05])); rbox(S, 14.4, 3.4, 0.1, 0, MAT.wall, X([0, 1.6, 6.05]));
+  rbox(S, 0.1, 3.4, 12.4, 0, MAT.wall, X([7.05, 1.6, 0])); rbox(S, 0.1, 3.4, 12.4, 0, MAT.wall, X([-7.05, 1.6, 0]));
+  rbox(S, 14.4, 0.1, 12.4, 0, MAT.ceil, X([0, 3.25, 0]));
+  for (const cx of [-6, -3.6, -1.2, 1.2, 3.6, 6]) for (const cz of [-4.8, -2.4, 0, 2.4, 4.8]) {
+    rbox(S, 1.2, 0.02, 0.6, 0, MAT.panel, X([cx, 3.19, cz]));
+    rbox(S, 1.26, 0.012, 0.66, 0, M('#cfcac3', { r: 0.5, m: 0.6 }), X([cx, 3.197, cz]));
+  }
+  for (const sz of [1, -1]) {
+    rbox(S, 3.6, 0.03, 0.04, 0.004, MAT.noir, X([0, 3.17, 1.75 * sz]));
+  }
+  SPOTS.forEach((p, i) => spotBody(S, p, SPOT_T[i]));
+  wallRun(S, [0, 0, -6], 0, 13, PAL.H, rng, 'HOMME');
+  wallRun(S, [0, 0, 6], Math.PI, 13, PAL.F, rng, 'FEMME');
+  wallRun(S, [7, 0, 0], -Math.PI / 2, 11, PAL.E, rng, 'ENFANT');
+  wallRun(S, [-7, 0, 0], Math.PI / 2, 11, PAL.A, rng, 'ACCESSOIRES');
+  roundRack(S, -4.3, 2.5, PAL.F, rng); roundRack(S, 4.4, -2.6, PAL.H, rng);
+  table(S, 4.4, 2.8, 0.25, PAL.E, rng); table(S, -4.3, -2.7, -0.2, PAL.A, rng);
+  const castStart = S.n;
+  /* éléments proches qui projettent des ombres */
+  fixture(S, G, rng);
+  dressForm(S, PODS[0][0], PODS[0][1], 0.55, 'femme');
+  dressForm(S, PODS[1][0], PODS[1][1], Math.PI + 0.55, 'homme');
+  dressForm(S, PODS[2][0], PODS[2][1], 1.0, 'enfant');
+  /* sol */
+  const fm = MAT.floor, b = F.vn, W = 7, D = 6;
+  F.vert([-W, 0, -D], [0, 1, 0], -W / 0.6, -D / 0.6, fm); F.vert([W, 0, -D], [0, 1, 0], W / 0.6, -D / 0.6, fm);
+  F.vert([-W, 0, D], [0, 1, 0], -W / 0.6, D / 0.6, fm); F.vert([W, 0, D], [0, 1, 0], W / 0.6, D / 0.6, fm);
+  F.grid(b, 1, 1);
+  return { S, F, G, castStart };
+}
+
+/* =====================================================================
+   Shaders
+   ===================================================================== */
+const VS_MAIN = `#version 300 es
+layout(location=0) in vec3 aPos; layout(location=1) in vec3 aNrm; layout(location=2) in vec2 aUV;
+layout(location=3) in vec3 aCol; layout(location=4) in vec4 aMat; layout(location=5) in vec2 aExt;
+uniform mat4 uVP;
+out vec3 vPos; out vec3 vNrm; out vec2 vUV; out vec3 vCol; out vec4 vMat; flat out vec2 vExt;
+void main(){ vPos=aPos; vNrm=aNrm; vUV=aUV; vCol=aCol; vMat=aMat; vExt=aExt; gl_Position=uVP*vec4(aPos,1.); }`;
+
+const COMMON = `
+precision highp float; precision highp int;
+precision highp sampler2DArray; precision highp sampler2DArrayShadow;
+const float PI=3.14159265;
+float hash12(vec2 p){ vec3 p3=fract(vec3(p.xyx)*.1031); p3+=dot(p3,p3.yzx+33.33); return fract((p3.x+p3.y)*p3.z); }
+float vnoise(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.-2.*f);
+  return mix(mix(hash12(i),hash12(i+vec2(1,0)),f.x),mix(hash12(i+vec2(0,1)),hash12(i+vec2(1,1)),f.x),f.y); }
+vec3 toSRGB(vec3 c){ c=clamp(c,0.,1.); return mix(c*12.92,1.055*pow(c,vec3(1./2.4))-.055,step(.0031308,c)); }
+vec3 aces(vec3 c){
+  const mat3 I=mat3(.59719,.07600,.02840,.35458,.90834,.13383,.04823,.01566,.83777);
+  const mat3 O=mat3(1.60475,-.10208,-.00327,-.53108,1.10813,-.07276,-.07367,-.00605,1.07602);
+  c=I*c; vec3 a=c*(c+.0245786)-.000090537; vec3 b=c*(.983729*c+.4329510)+.238081; return clamp(O*(a/b),0.,1.); }
+float D_GGX(float NoH,float a){ float a2=a*a; float d=(NoH*a2-NoH)*NoH+1.; return a2/(PI*d*d+1e-7); }
+float V_SGGX(float NoV,float NoL,float a){ float a2=a*a; float gv=NoL*sqrt(NoV*NoV*(1.-a2)+a2); float gl=NoV*sqrt(NoL*NoL*(1.-a2)+a2); return .5/max(gv+gl,1e-5); }
+vec3 F_Sch(vec3 f0,float VoH){ return f0+(1.-f0)*pow(1.-VoH,5.); }
+vec3 envBRDF(vec3 F0,float r,float NoV){ const vec4 c0=vec4(-1.,-.0275,-.572,.022); const vec4 c1=vec4(1.,.0425,1.04,-.04);
+  vec4 rr=r*c0+c1; float a004=min(rr.x*rr.x,exp2(-9.28*NoV))*rr.x+rr.y; vec2 AB=vec2(-1.04,1.04)*a004+rr.zw; return F0*AB.x+AB.y; }
+vec3 palette(float i){ i=mod(i,7.);
+  return i<1.?vec3(.62,.05,.06):i<2.?vec3(.80,.74,.64):i<3.?vec3(.08,.09,.12):i<4.?vec3(.45,.30,.18):i<5.?vec3(.55,.6,.66):i<6.?vec3(.9,.9,.88):vec3(.25,.2,.2); }
+/* reflet analytique du magasin, boîte englobante avec correction de parallaxe */
+vec3 envMap(vec3 P,vec3 R,float rough){
+  const vec3 BMIN=vec3(-7.,0.,-6.), BMAX=vec3(7.,3.2,6.);
+  vec3 iv=1./(R+vec3(1e-6)); vec3 t1=(BMIN-P)*iv, t2=(BMAX-P)*iv; vec3 tf=max(t1,t2); float t=max(min(min(tf.x,tf.y),tf.z),0.);
+  vec3 H=P+R*t; float bl=.02+rough*rough*t*.9;
+  vec3 col;
+  if(H.y>3.17){
+    float cx=(floor(H.x/2.4)+.5)*2.4, cz=floor(H.z/2.4+.5)*2.4;
+    float px=1.-smoothstep(.6-bl,.6+bl,abs(H.x-cx)), pz=1.-smoothstep(.3-bl,.3+bl,abs(H.z-cz));
+    col=mix(vec3(.5,.49,.47),vec3(7.,6.6,6.1),px*pz);
+  } else if(H.y<.02){ col=vec3(.42,.39,.35); }
+  else {
+    float u=abs(H.x)>6.97?H.z:H.x; col=vec3(.36,.34,.32);
+    if(H.y<2.25){ col=vec3(.05,.045,.042);
+      float sh=fract((H.y-.1)/.42); float band=smoothstep(.03,.06,sh)*(1.-smoothstep(.45,.62,sh));
+      col=mix(col,mix(vec3(.16,.13,.12),palette(floor(u/.38)+floor(H.y/.42)*3.)*.35,1.-smoothstep(.0,.12,bl)),band*(1.-smoothstep(.1,.5,bl)));
+    }
+    if(H.y>2.41&&H.y<2.83) col=vec3(.45,.03,.04)*1.6;
+  }
+  vec3 avg=mix(vec3(.22,.2,.19),vec3(1.1,1.05,.98),smoothstep(-.2,.7,R.y));
+  return mix(col,avg,smoothstep(.35,.9,rough));
+}
+`;
+
+const FS_MAIN = `#version 300 es
+${COMMON}
+in vec3 vPos; in vec3 vNrm; in vec2 vUV; in vec3 vCol; in vec4 vMat; flat in vec2 vExt;
+uniform vec3 uCam; uniform sampler2DArray uTex; uniform sampler2DArrayShadow uShadow; uniform sampler2D uRefl;
+uniform mat4 uShM[4]; uniform vec3 uSpP[4]; uniform vec3 uSpD[4]; uniform vec3 uSpC; uniform vec2 uSpCone; uniform float uShTexel; uniform float uPcfR;
+uniform vec3 uLedC; uniform float uAmb; uniform vec2 uRes; uniform int uMode; uniform int uLDR; uniform float uSeed; uniform float uExpo;
+out vec4 oCol;
+const float LV[7]=float[7](.14,.40,.66,.92,1.18,1.40,1.62);
+const vec2 PD[8]=vec2[8](vec2(-.326,-.406),vec2(-.840,-.074),vec2(-.696,.457),vec2(-.203,.621),vec2(.962,-.195),vec2(.473,-.480),vec2(.519,.767),vec2(.185,-.893));
+const vec2 POD[3]=vec2[3](vec2(-2.35,2.),vec2(2.35,-2.),vec2(3.,1.25));
+struct Surf{ vec3 P; vec3 N; vec3 V; vec3 diff; vec3 F0; float a; float cc; float sheen; float NoV; };
+
+vec3 direct(Surf s,vec3 L,vec3 rad){
+  float NoL=max(dot(s.N,L),0.); if(NoL<=0.) return vec3(0.);
+  vec3 H=normalize(L+s.V); float NoH=max(dot(s.N,H),0.), VoH=max(dot(s.V,H),0.);
+  vec3 F=F_Sch(s.F0,VoH);
+  vec3 spec=F*D_GGX(NoH,s.a)*V_SGGX(s.NoV,NoL,s.a);
+  vec3 dif=s.diff*(1.-F)/PI*(1.+s.sheen*.8*pow(1.-s.NoV,3.));
+  vec3 r=(dif+spec)*rad*NoL;
+  if(s.cc>0.){ float Fc=.04+.96*pow(1.-VoH,5.); float sc=Fc*D_GGX(NoH,.05)*V_SGGX(s.NoV,NoL,.05); r=r*(1.-Fc*s.cc)+vec3(sc*s.cc)*rad*NoL; }
+  return r;
+}
+float shadowF(int i,vec3 P,vec3 N,vec3 L){
+  float nl=clamp(dot(N,L),0.,1.);
+  vec4 sc=uShM[i]*vec4(P+N*(.008+.035*(1.-nl))+L*.01,1.); sc.xyz/=sc.w; sc.xyz=sc.xyz*.5+.5;
+  if(sc.x<=0.||sc.x>=1.||sc.y<=0.||sc.y>=1.||sc.z>=1.) return 1.;
+  float a=uSeed>0.?hash12(gl_FragCoord.xy+uSeed*17.13)*6.2832:.7; mat2 R=mat2(cos(a),sin(a),-sin(a),cos(a));
+  float s=0.; for(int k=0;k<8;k++){ vec2 o=R*PD[k]*uShTexel*uPcfR; s+=texture(uShadow,vec4(sc.xy+o,float(i),sc.z-.0005)); }
+  return s/8.;
+}
+float fixAO(vec3 P){
+  float ax=abs(P.x), az=abs(P.z), ao=1.;
+  if(P.y<.03){
+    vec2 q=max(vec2(ax-1.5,az-.625),0.); ao*=mix(.42,1.,smoothstep(0.,.4,length(q)));
+    for(int i=0;i<3;i++){ float d=length(P.xz-POD[i]); ao*=mix(.6,1.,smoothstep(.4,.75,d)); }
+    return ao;
+  }
+  if(P.y<.14||P.y>1.62||ax>1.497||az>.603) return ao;
+  int k=0; for(int i=1;i<6;i++) if(P.y>=LV[i]-.001) k=i;
+  float up=LV[k+1]-.026-P.y, dn=P.y-LV[k];
+  bool face=ax<1.1;
+  float depth=face?(.6-az):(1.5-ax);
+  ao*=1.-.5*smoothstep(0.,.48,depth);
+  ao*=mix(.7,1.,smoothstep(0.,.1,up));
+  ao*=mix(.78,1.,smoothstep(0.,.05,dn));
+  float dx=face?min(min(abs(P.x+.367),abs(P.x-.367)),1.1-ax):min(abs(P.z),.6-az);
+  ao*=mix(.72,1.,smoothstep(0.,.1,max(dx,0.)));
+  return ao;
+}
+vec3 ledLight(Surf s){
+  vec3 P=s.P; if(P.y<.13||P.y>1.622) return vec3(0.);
+  float ax=abs(P.x), az=abs(P.z); if(ax>1.55||az>.68) return vec3(0.);
+  int k=0; for(int i=1;i<6;i++) if(P.y>=LV[i]-.001) k=i;
+  float yl=LV[k+1]-.032; vec3 a,b;
+  if(ax<1.1){ float sz=P.z>=0.?1.:-1.; a=vec3(-1.08,yl,.568*sz); b=vec3(1.08,yl,.568*sz); }
+  else { float sx=P.x>=0.?1.:-1.; a=vec3(1.468*sx,yl,-.6); b=vec3(1.468*sx,yl,.6); }
+  vec3 ab=b-a; float len=length(ab); vec3 dir=ab/len; float tt=dot(P-a,dir);
+  vec3 foot=a+dir*tt; float d=max(length(foot-P),.015);
+  float E=(atan((len-tt)/d)-atan(-tt/d))/d;
+  vec3 c=a+dir*clamp(tt,0.,len); vec3 L=normalize(c-P);
+  float em=smoothstep(-.05,.35,L.y);
+  return direct(s,L,uLedC*E*em);
+}
+void fabric(int f,inout vec3 N,inout vec3 alb,inout float rough,out float sheen,vec2 uv,vec3 P){
+  sheen=0.; if(f==0||f==15) return;
+  vec3 dp1=dFdx(P), dp2=dFdy(P); vec2 du1=dFdx(uv), du2=dFdy(uv);
+  vec3 dp2p=cross(dp2,N), dp1p=cross(N,dp1);
+  vec3 T=dp2p*du1.x+dp1p*du2.x, B=dp2p*du1.y+dp1p*du2.y;
+  float inv=inversesqrt(max(max(dot(T,T),dot(B,B)),1e-24)); T*=inv; B*=inv;
+  float fw=max(length(du1),length(du2)); vec2 g=vec2(0.);
+  if(f==1){ float fr=230.; float ph=uv.x*fr*6.2832; float fa=1.-smoothstep(.15,.45,fw*fr);
+    g.x=-sin(ph)*.55*fa; alb*=mix(1.,.86+.14*(.5+.5*cos(ph)),fa); alb*=.95+.1*vnoise(uv*vec2(fr,fr*.5))*fa; rough=.92; sheen=1.; }
+  else if(f==2){ float fr=300.; float ph=(uv.x+uv.y)*fr*6.2832; float fa=1.-smoothstep(.15,.45,fw*fr);
+    g=vec2(-sin(ph))*.3*fa; alb*=mix(1.,.8+.25*(.5+.5*cos(ph)),fa); alb*=.88+.24*vnoise(uv*vec2(9.,160.)); rough=.82; sheen=.4; }
+  else if(f==3){ float fa=1.-smoothstep(.2,.6,fw*500.); g=(vec2(vnoise(uv*500.),vnoise(uv*500.+7.3))-.5)*.35*fa;
+    alb*=.95+.09*vnoise(uv*35.); rough=.9; sheen=1.; }
+  else if(f==4){ float fa=1.-smoothstep(.3,.8,fw*45.); float st=step(.5,fract(uv.x*45.)); alb*=mix(1.,.87+.13*st,fa);
+    float fb=1.-smoothstep(.25,.6,fw*700.); g=(vec2(vnoise(uv*700.),vnoise(uv*700.+3.1))-.5)*.2*fb; rough=.72; sheen=.5; }
+  else if(f==5){ float fr=95.; float ph=uv.x*fr*6.2832; float fa=1.-smoothstep(.15,.45,fw*fr); float fc=1.-smoothstep(.15,.45,fw*130.);
+    g.x=-sin(ph)*.75*fa; g.y=-sin(uv.y*130.*6.2832+sin(ph)*1.5)*.35*fc;
+    alb*=mix(1.,.82+.18*(.5+.5*cos(ph)),fa); alb*=.93+.12*vnoise(uv*60.); rough=.96; sheen=1.3; }
+  else if(f==6){ float per=.028; float ph=uv.x/per*6.2832; float fa=1.-smoothstep(.2,.6,fw/per);
+    g.x=-sin(ph)*1.1*fa; alb*=mix(1.,.75+.4*(.5+.5*cos(ph)),fa); }
+  else if(f==7){ float n=vnoise(vec2(uv.x*6.,uv.y*900.)); rough*=.75+.5*n; alb*=.96+.08*n; }
+  else if(f==8){ float fa=1.-smoothstep(.2,.6,fw*350.); float n=vnoise(uv*350.)+.5*vnoise(uv*900.);
+    g=(vec2(vnoise(uv*350.+1.3),vnoise(uv*350.+7.1))-.5)*.3*fa; rough=clamp(rough+(n-.75)*.15,.15,.9); }
+  else if(f==9){ alb*=.94+.1*vnoise(uv*220.); }
+  N=normalize(N-(T*g.x+B*g.y));
+}
+void main(){
+  vec3 N=normalize(vNrm); vec3 V=normalize(uCam-vPos); if(dot(N,V)<0.) N=-N;
+  int layer=int(floor(vExt.x+.5)), f=int(floor(vExt.y+.5));
+  vec3 alb=vCol; float ta=1.;
+  if(layer>=0){ vec4 tx=texture(uTex,vec3(vUV,float(layer))); if(f==15&&tx.a<.5) discard; alb*=tx.rgb; ta=tx.a; }
+  float rough=vMat.x, metal=vMat.y, cc=vMat.z, emi=vMat.w, sheen=0.;
+  fabric(f,N,alb,rough,sheen,vUV,vPos);
+  float joint=0.;
+  if(uMode==1){ joint=1.-ta; rough=mix(rough,.7,joint); alb*=mix(1.,.8,joint);
+    rough=clamp(rough+(vnoise(vPos.xz*1.7)-.5)*.06,.05,1.); }
+  Surf s; s.P=vPos; s.N=N; s.V=V; s.NoV=max(dot(N,V),1e-4); s.a=max(rough*rough,.002);
+  s.diff=alb*(1.-metal); s.F0=mix(vec3(.04),alb,metal); s.cc=cc; s.sheen=sheen;
+  float ao=fixAO(vPos);
+  float hy=smoothstep(-1.,1.,N.y);
+  vec3 col=s.diff*mix(vec3(.3,.27,.24),vec3(1.,.97,.92),hy)*uAmb*ao;
+  vec3 R=reflect(-V,N);
+  vec3 Fe=envBRDF(s.F0,rough,s.NoV);
+  if(uMode==1){
+    vec2 suv=gl_FragCoord.xy/uRes+N.xz*.006;
+    float lod=.6+rough*10.;
+    vec3 rc=textureLod(uRefl,suv,lod).rgb;
+    col+=rc*Fe*mix(1.,.25,joint);
+  } else col+=envMap(vPos,R,rough)*Fe*ao;
+  for(int i=0;i<4;i++){
+    vec3 Lv=uSpP[i]-vPos; float d2=dot(Lv,Lv); vec3 L=Lv*inversesqrt(d2);
+    float cone=smoothstep(uSpCone.y,uSpCone.x,dot(-L,uSpD[i])); if(cone<=.001) continue;
+    if(dot(N,L)<=0.) continue;
+    float sh=shadowF(i,vPos,N,L); if(sh<=.001) continue;
+    col+=direct(s,L,uSpC*(cone*sh/d2));
+  }
+  col+=ledLight(s);
+  if(cc>0.&&uMode!=1){ float Fc=.04+.96*pow(1.-s.NoV,5.); col=col*(1.-Fc*cc)+envMap(vPos,R,.13)*Fc*cc*ao; }
+  col+=alb*emi;
+  col=min(col,vec3(64.));
+  if(uMode==2){ oCol=vec4(uLDR==1?min(col,vec3(1.)):col,1.); return; }
+  if(uLDR==1) col=toSRGB(aces(col*uExpo));
+  oCol=vec4(col,1.);
+}`;
+
+const FS_GLASS = `#version 300 es
+${COMMON}
+in vec3 vPos; in vec3 vNrm; in vec2 vUV; in vec3 vCol; in vec4 vMat; flat in vec2 vExt;
+uniform vec3 uCam; uniform sampler2D uScene; uniform mat4 uView; uniform vec2 uRes; uniform int uLDR; uniform float uExpo;
+uniform vec3 uSpP[4]; uniform vec3 uSpD[4]; uniform vec3 uSpC; uniform vec2 uSpCone;
+out vec4 oCol;
+void main(){
+  vec3 N=normalize(vNrm); vec3 V=normalize(uCam-vPos); if(dot(N,V)<0.) N=-N;
+  float NoV=max(dot(N,V),1e-3), frost=vMat.x, th=vMat.y; vec3 tint=vCol;
+  vec2 suv=gl_FragCoord.xy/uRes; vec3 Nv=mat3(uView)*N;
+  suv-=Nv.xy*.01*(.5+th*6.);
+  vec3 refr=textureLod(uScene,clamp(suv,.001,.999),frost*6.).rgb;
+  float path=th/max(NoV,.12);
+  vec3 absorb=exp(-(1.-tint)*path*30.);
+  float F=.04+.96*pow(1.-NoV,5.);
+  vec3 R=reflect(-V,N);
+  vec3 add=envMap(vPos,R,.02+frost*.5)*F;
+  for(int i=0;i<4;i++){
+    vec3 Lv=uSpP[i]-vPos; float d2=dot(Lv,Lv); vec3 L=Lv*inversesqrt(d2);
+    float cone=smoothstep(uSpCone.y,uSpCone.x,dot(-L,uSpD[i])); vec3 H=normalize(L+V);
+    add+=uSpC*cone/d2*D_GGX(max(dot(N,H),0.),.03)*.25*F*max(dot(N,L),0.);
+  }
+  if(uLDR==1) add=toSRGB(aces(add*uExpo))-toSRGB(vec3(0.));
+  oCol=vec4(refr*absorb*(1.-F)+add,1.);
+}`;
+
+const VS_DEPTH = `#version 300 es
+layout(location=0) in vec3 aPos; uniform mat4 uVP; void main(){ gl_Position=uVP*vec4(aPos,1.); }`;
+const FS_DEPTH = `#version 300 es
+precision mediump float; void main(){}`;
+
+const VS_FS = `#version 300 es
+out vec2 vUV; void main(){ vec2 p=vec2(gl_VertexID==1?3.:-1.,gl_VertexID==2?3.:-1.); vUV=p*.5+.5; gl_Position=vec4(p,0.,1.); }`;
+const FS_COPY = `#version 300 es
+precision highp float; in vec2 vUV; uniform sampler2D uSrc; uniform float uK; out vec4 o;
+void main(){ o=vec4(texture(uSrc,vUV).rgb*uK,1.); }`;
+const FS_CONST = `#version 300 es
+precision highp float; out vec4 o; void main(){ o=vec4(2.5,.5,.25,1.); }`;
+const FS_DOWN = `#version 300 es
+precision highp float; in vec2 vUV; uniform sampler2D uSrc; uniform vec2 uTexel; uniform int uPre; uniform float uThr; out vec4 o;
+float lum(vec3 c){ return max(c.r,max(c.g,c.b)); }
+void main(){ vec2 t=uTexel;
+  vec3 a=texture(uSrc,vUV+vec2(-t.x,-t.y)).rgb, b=texture(uSrc,vUV+vec2(t.x,-t.y)).rgb, c=texture(uSrc,vUV+vec2(-t.x,t.y)).rgb, d=texture(uSrc,vUV+vec2(t.x,t.y)).rgb;
+  vec3 r;
+  if(uPre==1){ float wa=1./(1.+lum(a)), wb=1./(1.+lum(b)), wc=1./(1.+lum(c)), wd=1./(1.+lum(d));
+    r=(a*wa+b*wb+c*wc+d*wd)/(wa+wb+wc+wd); float br=lum(r); float k=max(br-uThr,0.); k=k*k/(k+.5*uThr+1e-4)+max(br-uThr*1.5,0.); r*=k/max(br,1e-4); }
+  else r=(a+b+c+d)*.25;
+  o=vec4(r,1.); }`;
+const FS_UP = `#version 300 es
+precision highp float; in vec2 vUV; uniform sampler2D uSrc; uniform vec2 uTexel; out vec4 o;
+void main(){ vec2 t=uTexel; vec3 s=texture(uSrc,vUV).rgb*4.;
+  s+=(texture(uSrc,vUV+vec2(t.x,0.)).rgb+texture(uSrc,vUV-vec2(t.x,0.)).rgb+texture(uSrc,vUV+vec2(0.,t.y)).rgb+texture(uSrc,vUV-vec2(0.,t.y)).rgb)*2.;
+  s+=texture(uSrc,vUV+t).rgb+texture(uSrc,vUV-t).rgb+texture(uSrc,vUV+vec2(t.x,-t.y)).rgb+texture(uSrc,vUV+vec2(-t.x,t.y)).rgb;
+  o=vec4(s/16.,1.); }`;
+const FS_COMP = `#version 300 es
+precision highp float; in vec2 vUV; uniform sampler2D uSrc; uniform sampler2D uBloom; uniform float uExpo; uniform float uBloomK; uniform float uFrame; uniform int uLDR; uniform float uAsp; out vec4 o;
+float hash12(vec2 p){ vec3 p3=fract(vec3(p.xyx)*.1031); p3+=dot(p3,p3.yzx+33.33); return fract((p3.x+p3.y)*p3.z); }
+vec3 toSRGB(vec3 c){ c=clamp(c,0.,1.); return mix(c*12.92,1.055*pow(c,vec3(1./2.4))-.055,step(.0031308,c)); }
+vec3 aces(vec3 c){
+  const mat3 I=mat3(.59719,.07600,.02840,.35458,.90834,.13383,.04823,.01566,.83777);
+  const mat3 O=mat3(1.60475,-.10208,-.00327,-.53108,1.10813,-.07276,-.07367,-.00605,1.07602);
+  c=I*c; vec3 a=c*(c+.0245786)-.000090537; vec3 b=c*(.983729*c+.4329510)+.238081; return clamp(O*(a/b),0.,1.); }
+void main(){
+  vec3 c=texture(uSrc,vUV).rgb;
+  if(uLDR==0){ c=(c+texture(uBloom,vUV).rgb*uBloomK)*uExpo; c=toSRGB(aces(c)); }
+  vec2 q=(vUV-.5)*vec2(uAsp,1.); float r=length(q)/max(length(vec2(uAsp,1.))*.5,1e-3);
+  c*=1.-.3*smoothstep(.45,1.15,r);
+  c+=(hash12(gl_FragCoord.xy+fract(uFrame*.618)*97.)-.5)/255.;
+  o=vec4(c,1.);
+}`;
+
+/* =====================================================================
+   WebGL : état & ressources
+   ===================================================================== */
+let gl = null, SCENE = null, TEXCV = null;
+let P = {}, R = {}, HDR = true, SAMPLES = 0, lost = false;
+const rt = { w: 0, h: 0 };
+let renderScale = Q.scale;
+
+function compile(type, src) {
+  const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS) && !gl.isContextLost()) {
+    const log = gl.getShaderInfoLog(s); console.error(log, src.split('\n').map((l, i) => (i + 1) + ': ' + l).join('\n'));
+    throw new Error('Shader : ' + log);
+  }
+  return s;
+}
+function program(vs, fs) {
+  const p = gl.createProgram();
+  gl.attachShader(p, compile(gl.VERTEX_SHADER, vs)); gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS) && !gl.isContextLost()) throw new Error('Programme : ' + gl.getProgramInfoLog(p));
+  const u = {}, n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+  for (let i = 0; i < n; i++) { const inf = gl.getActiveUniform(p, i); const nm = inf.name.replace(/\[0\]$/, ''); u[nm] = gl.getUniformLocation(p, inf.name); }
+  return { p, u };
+}
+function mkTex2D(w, h, fmt, levels, filter) {
+  const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.texStorage2D(gl.TEXTURE_2D, levels, fmt, w, h);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, levels > 1 ? gl.LINEAR_MIPMAP_LINEAR : (filter || gl.LINEAR));
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter || gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  return t;
+}
+function mkFB(tex, depthRB) {
+  const f = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, f);
+  if (tex) gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+  if (depthRB) gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthRB);
+  return f;
+}
+const levelsFor = (w, h) => Math.floor(Math.log2(Math.max(w, h))) + 1;
+
+/* Test réel du rendu flottant (certains téléphones l'annoncent sans le gérer) */
+function testHDR() {
+  if (!gl.getExtension('EXT_color_buffer_float')) return false;
+  let ok = false;
+  const objs = [];
+  try {
+    const pc = program(VS_FS, FS_CONST), pk = program(VS_FS, FS_COPY); objs.push(pc.p, pk.p);
+    const t1 = mkTex2D(4, 4, gl.RGBA16F, 1, gl.NEAREST), f1 = mkFB(t1); objs.push(t1, f1);
+    if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) throw 0;
+    gl.viewport(0, 0, 4, 4); gl.disable(gl.BLEND); gl.disable(gl.DEPTH_TEST);
+    gl.useProgram(pc.p); gl.bindVertexArray(R.emptyVAO); gl.drawArrays(gl.TRIANGLES, 0, 3);
+    const t2 = mkTex2D(4, 4, gl.RGBA8, 1, gl.NEAREST), f2 = mkFB(t2); objs.push(t2, f2);
+    gl.useProgram(pk.p); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, t1);
+    gl.uniform1i(pk.u.uSrc, 0); gl.uniform1f(pk.u.uK, 0.25); gl.drawArrays(gl.TRIANGLES, 0, 3);
+    const px = new Uint8Array(4); gl.readPixels(1, 1, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    ok = Math.abs(px[0] - 159) < 8 && Math.abs(px[1] - 32) < 8;
+    if (ok) {
+      const rb = gl.createRenderbuffer(); gl.bindRenderbuffer(gl.RENDERBUFFER, rb);
+      gl.renderbufferStorageMultisample(gl.RENDERBUFFER, 0, gl.RGBA16F, 4, 4);
+      const f3 = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, f3);
+      gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, rb);
+      ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+      gl.deleteFramebuffer(f3); gl.deleteRenderbuffer(rb);
+    }
+  } catch (e) { ok = false; }
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  for (const o of objs) { if (o instanceof WebGLProgram) gl.deleteProgram(o); else if (o instanceof WebGLTexture) gl.deleteTexture(o); else gl.deleteFramebuffer(o); }
+  while (gl.getError() !== gl.NO_ERROR) { /* purge */ }
+  return ok;
+}
+function mkMeshVAO(B) {
+  const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
+  const vb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vb); gl.bufferData(gl.ARRAY_BUFFER, B.v.subarray(0, B.vn * ST), gl.STATIC_DRAW);
+  const ib = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, B.ix.subarray(0, B.n), gl.STATIC_DRAW);
+  const sz = [3, 3, 2, 3, 4, 2]; let off = 0;
+  sz.forEach((s, i) => { gl.enableVertexAttribArray(i); gl.vertexAttribPointer(i, s, gl.FLOAT, false, ST * 4, off); off += s * 4; });
+  gl.bindVertexArray(null);
+  return { vao, count: B.n };
+}
+
+function initGL() {
+  R = { emptyVAO: gl.createVertexArray() };
+  R.dummy = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, R.dummy);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([60, 56, 52, 255]));
+  HDR = testHDR();
+  P.main = program(VS_MAIN, FS_MAIN);
+  P.glass = program(VS_MAIN, FS_GLASS);
+  P.depth = program(VS_DEPTH, FS_DEPTH);
+  P.copy = program(VS_FS, FS_COPY);
+  P.down = program(VS_FS, FS_DOWN);
+  P.up = program(VS_FS, FS_UP);
+  P.comp = program(VS_FS, FS_COMP);
+  R.S = mkMeshVAO(SCENE.S); R.F = mkMeshVAO(SCENE.F); R.G = mkMeshVAO(SCENE.G);
+  /* tableau de textures (sRGB) */
+  const TS = Q.tex;
+  R.tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D_ARRAY, R.tex);
+  gl.texStorage3D(gl.TEXTURE_2D_ARRAY, levelsFor(TS, TS), gl.SRGB8_ALPHA8, TS, TS, TEXCV.length);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false); gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+  TEXCV.forEach((c, i) => gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, 0, 0, i, TS, TS, 1, gl.RGBA, gl.UNSIGNED_BYTE, c));
+  gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
+  gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_S, gl.REPEAT); gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_T, gl.REPEAT);
+  const an = gl.getExtension('EXT_texture_filter_anisotropic');
+  if (an) gl.texParameterf(gl.TEXTURE_2D_ARRAY, an.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(MOBILE ? 4 : 8, gl.getParameter(an.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
+  /* 4 cartes d'ombre dans un tableau de profondeur */
+  const SS = Q.shadow;
+  R.shTex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D_ARRAY, R.shTex);
+  gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.DEPTH_COMPONENT24, SS, SS, 4);
+  gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_COMPARE_MODE, gl.COMPARE_REF_TO_TEXTURE);
+  gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_COMPARE_FUNC, gl.LEQUAL);
+  gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  R.shFB = gl.createFramebuffer();
+  shadowState = -1;
+  /* MSAA */
+  const cf = HDR ? gl.RGBA16F : gl.RGBA8;
+  let samples = 0;
+  try {
+    const arr = gl.getInternalformatParameter(gl.RENDERBUFFER, cf, gl.SAMPLES);
+    for (const s of arr) if (s <= Q.msaa) { samples = Math.max(samples, s); }
+    if (!samples && arr.length) samples = Math.min(...arr);
+  } catch (e) { samples = 0; }
+  SAMPLES = samples;
+  rt.w = rt.h = 0;
+}
+function freeTargets() {
+  for (const k of ['msaaC', 'msaaD', 'reflD']) if (R[k]) gl.deleteRenderbuffer(R[k]);
+  for (const k of ['sceneTex', 'accTex', 'reflTex']) if (R[k]) gl.deleteTexture(R[k]);
+  for (const k of ['msaaFB', 'sceneFB', 'accFB', 'reflFB']) if (R[k]) gl.deleteFramebuffer(R[k]);
+  if (R.bloom) R.bloom.forEach(b => { gl.deleteTexture(b.t); gl.deleteFramebuffer(b.f); });
+}
+function allocTargets(w, h) {
+  freeTargets();
+  const cf = HDR ? gl.RGBA16F : gl.RGBA8;
+  R.msaaC = gl.createRenderbuffer(); gl.bindRenderbuffer(gl.RENDERBUFFER, R.msaaC); gl.renderbufferStorageMultisample(gl.RENDERBUFFER, SAMPLES, cf, w, h);
+  R.msaaD = gl.createRenderbuffer(); gl.bindRenderbuffer(gl.RENDERBUFFER, R.msaaD); gl.renderbufferStorageMultisample(gl.RENDERBUFFER, SAMPLES, gl.DEPTH_COMPONENT24, w, h);
+  R.msaaFB = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, R.msaaFB);
+  gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, R.msaaC);
+  gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, R.msaaD);
+  R.sceneLv = levelsFor(w, h);
+  R.sceneTex = mkTex2D(w, h, cf, R.sceneLv); R.sceneFB = mkFB(R.sceneTex);
+  R.accTex = mkTex2D(w, h, cf, 1); R.accFB = mkFB(R.accTex);
+  const rw = Math.max(16, Math.round(w * Q.refl)), rh = Math.max(16, Math.round(h * Q.refl));
+  R.rw = rw; R.rh = rh;
+  R.reflTex = mkTex2D(rw, rh, cf, levelsFor(rw, rh));
+  R.reflD = gl.createRenderbuffer(); gl.bindRenderbuffer(gl.RENDERBUFFER, R.reflD); gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, rw, rh);
+  R.reflFB = mkFB(R.reflTex, R.reflD);
+  R.bloom = [];
+  if (HDR) for (let i = 0; i < Q.bloom; i++) {
+    const bw = Math.max(1, w >> (i + 1)), bh = Math.max(1, h >> (i + 1));
+    const t = mkTex2D(bw, bh, gl.RGBA16F, 1); R.bloom.push({ t, f: mkFB(t), w: bw, h: bh });
+  }
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+}
+
+/* =====================================================================
+   Caméra
+   ===================================================================== */
+const VIEWS = {
+  tq: { l: { t: [0, 0.9, 0], yaw: 0.62, pitch: 0.17, dist: 4.15, fov: 40 }, p: { t: [0, 0.98, 0], yaw: 0.62, pitch: 0.2, dist: 5.4, fov: 64 } },
+  face: { l: { t: [0, 0.95, 0], yaw: 0, pitch: 0.06, dist: 3.95, fov: 40 }, p: { t: [0, 0.98, 0], yaw: 0, pitch: 0.08, dist: 5.3, fov: 66 } },
+  rayon: { l: { t: [-0.73, 1.06, 0.6], yaw: 0.2, pitch: 0.05, dist: 1.05, fov: 42 }, p: { t: [-0.73, 1.05, 0.6], yaw: 0.14, pitch: 0.06, dist: 1.25, fov: 62 } },
+  cote: { l: { t: [0, 0.95, 0], yaw: Math.PI / 2, pitch: 0.08, dist: 3.9, fov: 40 }, p: { t: [0, 0.98, 0], yaw: Math.PI / 2, pitch: 0.1, dist: 4.4, fov: 62 } },
+  dos: { l: { t: [0, 0.95, 0], yaw: Math.PI, pitch: 0.06, dist: 3.95, fov: 40 }, p: { t: [0, 0.98, 0], yaw: Math.PI, pitch: 0.08, dist: 5.3, fov: 66 } },
+  tour: { l: { t: [0, 0.95, 0], yaw: 0.62, pitch: 0.2, dist: 4.9, fov: 40 }, p: { t: [0, 0.98, 0], yaw: 0.62, pitch: 0.22, dist: 5.6, fov: 64 } }
+};
+const cloneS = s => ({ t: s.t.slice(), yaw: s.yaw, pitch: s.pitch, dist: s.dist, fov: s.fov });
+let portrait = innerHeight > innerWidth * 1.05;
+const cur = cloneS(VIEWS.tq[portrait ? 'p' : 'l']); cur.dist += 2.5; cur.yaw += 0.5;
+const goal = cloneS(cur);
+let trans = null, auto = false, vel = { yaw: 0, pitch: 0 }, lastView = 'tq';
+
+function constrain(s) {
+  s.pitch = clamp(s.pitch, -0.12, 1.25); s.dist = clamp(s.dist, 0.4, 9.5); s.fov = clamp(s.fov, 25, 75);
+  s.t[0] = clamp(s.t[0], -5.5, 5.5); s.t[1] = clamp(s.t[1], 0.15, 2.4); s.t[2] = clamp(s.t[2], -4.6, 4.6);
+  const cp = Math.cos(s.pitch), d = [cp * Math.sin(s.yaw), Math.sin(s.pitch), cp * Math.cos(s.yaw)];
+  const lo = [-6.75, 0.12, -5.75], hi = [6.75, 3.0, 5.75];
+  let tmax = 1e9;
+  for (let k = 0; k < 3; k++) if (Math.abs(d[k]) > 1e-6) tmax = Math.min(tmax, ((d[k] > 0 ? hi[k] : lo[k]) - s.t[k]) / d[k]);
+  const bl = [-1.62, -1, -0.76], bh = [1.62, 1.98, 0.76];
+  let tn = -1e9, tx = 1e9, hit = true;
+  for (let k = 0; k < 3; k++) {
+    if (Math.abs(d[k]) < 1e-8) { if (s.t[k] < bl[k] || s.t[k] > bh[k]) hit = false; continue; }
+    let a = (bl[k] - s.t[k]) / d[k], b = (bh[k] - s.t[k]) / d[k]; if (a > b) [a, b] = [b, a];
+    tn = Math.max(tn, a); tx = Math.min(tx, b);
+  }
+  if (tn > tx) hit = false;
+  let dmin = 0.3, dmax = tmax;
+  if (hit) { if (tn <= 0 && tx > 0) dmin = Math.max(dmin, tx + 0.06); else if (tn > 0) dmax = Math.min(dmax, tn - 0.06); }
+  s.dist = Math.max(Math.min(s.dist, dmax), Math.min(dmin, dmax));
+  s.dist = Math.max(s.dist, 0.25);
+}
+function setView(name, dur) {
+  lastView = name; auto = name === 'tour';
+  const to = cloneS(VIEWS[name][portrait ? 'p' : 'l']);
+  to.yaw = goal.yaw + wrapPi(to.yaw - goal.yaw);
+  trans = { from: cloneS(goal), to, t: 0, dur: reduced ? 0 : (dur ?? 1.3) };
+  vel.yaw = vel.pitch = 0;
+  document.querySelectorAll('#barre button').forEach(b => b.classList.toggle('on', b.dataset.v === name));
+}
+function userTook() {
+  trans = null; auto = false;
+  document.querySelectorAll('#barre button').forEach(b => b.classList.remove('on'));
+  hideHelp();
+}
+const ease = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+function updateCamera(dt) {
+  if (trans) {
+    trans.t += dt; const k = trans.dur > 0 ? ease(Math.min(1, trans.t / trans.dur)) : 1;
+    const a = trans.from, b = trans.to;
+    goal.t = [lerp(a.t[0], b.t[0], k), lerp(a.t[1], b.t[1], k), lerp(a.t[2], b.t[2], k)];
+    goal.yaw = lerp(a.yaw, b.yaw, k); goal.pitch = lerp(a.pitch, b.pitch, k);
+    const arc = Math.sin(k * Math.PI) * (Math.abs(wrapPi(b.yaw - a.yaw)) > 1.2 ? 0.6 : 0);
+    goal.dist = lerp(a.dist, b.dist, k) + arc; goal.fov = lerp(a.fov, b.fov, k);
+    if (k >= 1) trans = null;
+  }
+  if (auto) goal.yaw += dt * (reduced ? 0.05 : 0.16);
+  if (!dragging && (Math.abs(vel.yaw) > 1e-5 || Math.abs(vel.pitch) > 1e-5)) {
+    goal.yaw += vel.yaw * dt; goal.pitch += vel.pitch * dt;
+    const dk = Math.exp(-dt * 4.5); vel.yaw *= dk; vel.pitch *= dk;
+    if (Math.abs(vel.yaw) < 1e-3 && Math.abs(vel.pitch) < 1e-3) vel.yaw = vel.pitch = 0;
+  }
+  constrain(goal);
+  const f = reduced ? 1 : 1 - Math.exp(-dt * 10);
+  for (let i = 0; i < 3; i++) cur.t[i] = lerp(cur.t[i], goal.t[i], f);
+  cur.yaw = lerp(cur.yaw, goal.yaw, f); cur.pitch = lerp(cur.pitch, goal.pitch, f);
+  cur.dist = lerp(cur.dist, goal.dist, f); cur.fov = lerp(cur.fov, goal.fov, f);
+  constrain(cur);
+}
+function stillness() {
+  const d = Math.abs(cur.yaw - goal.yaw) + Math.abs(cur.pitch - goal.pitch) + Math.abs(cur.dist - goal.dist) + Math.abs(cur.fov - goal.fov) * 0.01
+    + Math.abs(cur.t[0] - goal.t[0]) + Math.abs(cur.t[1] - goal.t[1]) + Math.abs(cur.t[2] - goal.t[2]);
+  return !trans && !auto && !dragging && vel.yaw === 0 && vel.pitch === 0 && d < 2e-4;
+}
+function camMatrices(st, jit) {
+  const cp = Math.cos(st.pitch);
+  let eye = add(st.t, scl([cp * Math.sin(st.yaw), Math.sin(st.pitch), cp * Math.cos(st.yaw)], st.dist));
+  if (jit) {
+    const fwd = norm(sub(st.t, eye)), right = norm(cross(fwd, [0, 1, 0])), up = cross(right, fwd);
+    eye = add(eye, add(scl(right, jit.lx), scl(up, jit.ly)));
+  }
+  const view = m4look(eye, st.t, [0, 1, 0]);
+  const proj = m4persp(st.fov * Math.PI / 180, rt.w / rt.h, 0.03, 40);
+  if (jit) { proj[8] += jit.px * 2 / rt.w; proj[9] += jit.py * 2 / rt.h; }
+  return { eye, view, proj, vp: m4mul(proj, view) };
+}
+
+/* =====================================================================
+   Rendu
+   ===================================================================== */
+let acc = 0, frameNo = 0, shadowState = -1;
+const shM = new Float32Array(64), spP = new Float32Array(12), spD = new Float32Array(12);
+const SPOT_I = 16, SPOT_C = [1.0, 0.86, 0.72], CONE = [Math.cos(20 * Math.PI / 180), Math.cos(40 * Math.PI / 180)];
+const LED_C = [1.0, 0.9, 0.78].map(v => v * 0.16);
+const EXPO = 1.15;
+
+function renderShadows(jitter) {
+  const SS = Q.shadow, rj = RNG(1000 + acc * 7);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, R.shFB); gl.drawBuffers([gl.NONE]); gl.readBuffer(gl.NONE);
+  gl.viewport(0, 0, SS, SS); gl.enable(gl.DEPTH_TEST); gl.depthMask(true); gl.disable(gl.BLEND);
+  gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(1.5, 3.0);
+  gl.useProgram(P.depth.p); gl.bindVertexArray(R.S.vao);
+  const proj = m4persp(84 * Math.PI / 180, 1, 0.25, 6);
+  for (let i = 0; i < 4; i++) {
+    let p = SPOTS[i].slice();
+    const d = norm(sub(SPOT_T[i], p));
+    if (jitter) {
+      const a = norm(cross(d, [0, 1, 0])), b = cross(a, d), r = Math.sqrt(rj()) * 0.06, th = rj() * 6.2832;
+      p = add(p, add(scl(a, Math.cos(th) * r), scl(b, Math.sin(th) * r)));
+    }
+    const vp = m4mul(proj, m4look(p, SPOT_T[i], [0, 1, 0]));
+    shM.set(vp, i * 16); spP.set(p, i * 3); spD.set(d, i * 3);
+    gl.framebufferTextureLayer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, R.shTex, 0, i);
+    gl.clear(gl.DEPTH_BUFFER_BIT);
+    gl.uniformMatrix4fv(P.depth.u.uVP, false, vp);
+    gl.drawElements(gl.TRIANGLES, R.S.count - SCENE.castStart, gl.UNSIGNED_INT, SCENE.castStart * 4);
+  }
+  gl.disable(gl.POLYGON_OFFSET_FILL);
+}
+function setMain(prog, vp, eye, mode, w, h, seed) {
+  const u = prog.u;
+  gl.useProgram(prog.p);
+  gl.uniformMatrix4fv(u.uVP, false, vp); gl.uniform3fv(u.uCam, eye);
+  if (u.uShM) gl.uniformMatrix4fv(u.uShM, false, shM);
+  gl.uniform3fv(u.uSpP, spP); gl.uniform3fv(u.uSpD, spD);
+  gl.uniform3f(u.uSpC, SPOT_C[0] * SPOT_I, SPOT_C[1] * SPOT_I, SPOT_C[2] * SPOT_I); gl.uniform2f(u.uSpCone, CONE[0], CONE[1]);
+  if (u.uShTexel) gl.uniform1f(u.uShTexel, 1 / Q.shadow);
+  if (u.uPcfR) gl.uniform1f(u.uPcfR, Q.pcfR);
+  if (u.uLedC) gl.uniform3fv(u.uLedC, LED_C);
+  if (u.uAmb) gl.uniform1f(u.uAmb, 0.95);
+  gl.uniform2f(u.uRes, w, h);
+  if (u.uMode) gl.uniform1i(u.uMode, mode);
+  gl.uniform1i(u.uLDR, HDR ? 0 : 1);
+  if (u.uSeed) gl.uniform1f(u.uSeed, seed);
+  gl.uniform1f(u.uExpo, EXPO);
+  if (u.uTex) { gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D_ARRAY, R.tex); gl.uniform1i(u.uTex, 0); }
+  if (u.uShadow) { gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D_ARRAY, R.shTex); gl.uniform1i(u.uShadow, 1); }
+  if (u.uRefl) { gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, mode === 2 ? R.dummy : R.reflTex); gl.uniform1i(u.uRefl, 2); }
+}
+function fullscreen(prog) { gl.useProgram(prog.p); gl.bindVertexArray(R.emptyVAO); }
+function renderFrame() {
+  const W = rt.w, H = rt.h, jit = acc > 0;
+  let J = null;
+  if (jit) {
+    const u = halton(acc, 5), v = halton(acc, 7), r = Math.sqrt(u) * Q.dof * Math.min(1.6, cur.dist / 2), th = v * 6.2832;
+    J = { px: halton(acc, 2) - 0.5, py: halton(acc, 3) - 0.5, lx: Math.cos(th) * r, ly: Math.sin(th) * r };
+  }
+  if (jit || shadowState !== 0) { renderShadows(jit); shadowState = jit ? 1 : 0; }
+  const cam = camMatrices(cur, J);
+  const seed = jit ? acc : 0;
+  /* 1. reflet miroir du sol */
+  gl.bindFramebuffer(gl.FRAMEBUFFER, R.reflFB); gl.viewport(0, 0, R.rw, R.rh);
+  gl.enable(gl.DEPTH_TEST); gl.depthMask(true); gl.depthFunc(gl.LEQUAL); gl.disable(gl.BLEND); gl.disable(gl.CULL_FACE);
+  gl.clearColor(0.2, 0.19, 0.18, 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  const S = new Float32Array([1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+  setMain(P.main, m4mul(cam.vp, S), [cam.eye[0], -cam.eye[1], cam.eye[2]], 2, R.rw, R.rh, seed);
+  gl.bindVertexArray(R.S.vao); gl.drawElements(gl.TRIANGLES, R.S.count, gl.UNSIGNED_INT, 0);
+  gl.bindTexture(gl.TEXTURE_2D, R.reflTex); gl.generateMipmap(gl.TEXTURE_2D);
+  /* 2. scène opaque (MSAA HDR) */
+  gl.bindFramebuffer(gl.FRAMEBUFFER, R.msaaFB); gl.viewport(0, 0, W, H);
+  gl.clearColor(0, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  setMain(P.main, cam.vp, cam.eye, 0, W, H, seed);
+  gl.bindVertexArray(R.S.vao); gl.drawElements(gl.TRIANGLES, R.S.count, gl.UNSIGNED_INT, 0);
+  gl.uniform1i(P.main.u.uMode, 1);
+  gl.bindVertexArray(R.F.vao); gl.drawElements(gl.TRIANGLES, R.F.count, gl.UNSIGNED_INT, 0);
+  const resolve = () => {
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, R.msaaFB); gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, R.sceneFB);
+    gl.blitFramebuffer(0, 0, W, H, 0, 0, W, H, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+  };
+  resolve();
+  /* 3. verre : réfraction de l'écran */
+  if (R.G.count) {
+    gl.bindTexture(gl.TEXTURE_2D, R.sceneTex); gl.generateMipmap(gl.TEXTURE_2D);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, R.msaaFB); gl.depthMask(false);
+    setMain(P.glass, cam.vp, cam.eye, 0, W, H, seed);
+    gl.uniformMatrix4fv(P.glass.u.uView, false, cam.view);
+    gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, R.sceneTex); gl.uniform1i(P.glass.u.uScene, 3);
+    gl.bindVertexArray(R.G.vao); gl.drawElements(gl.TRIANGLES, R.G.count, gl.UNSIGNED_INT, 0);
+    gl.depthMask(true);
+    gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, null);
+    resolve();
+  }
+  gl.disable(gl.DEPTH_TEST);
+  /* 4. accumulation progressive */
+  gl.bindFramebuffer(gl.FRAMEBUFFER, R.accFB); gl.viewport(0, 0, W, H);
+  if (acc > 0) { gl.enable(gl.BLEND); gl.blendColor(0, 0, 0, 1 / (acc + 1)); gl.blendFunc(gl.CONSTANT_ALPHA, gl.ONE_MINUS_CONSTANT_ALPHA); }
+  fullscreen(P.copy); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, R.sceneTex);
+  gl.uniform1i(P.copy.u.uSrc, 0); gl.uniform1f(P.copy.u.uK, 1); gl.drawArrays(gl.TRIANGLES, 0, 3);
+  gl.disable(gl.BLEND);
+  /* 5. bloom */
+  if (HDR && R.bloom.length) {
+    fullscreen(P.down); gl.uniform1i(P.down.u.uSrc, 0); gl.uniform1f(P.down.u.uThr, 1.6);
+    for (let i = 0; i < R.bloom.length; i++) {
+      const b = R.bloom[i], src = i ? R.bloom[i - 1] : { t: R.accTex, w: W, h: H };
+      gl.bindFramebuffer(gl.FRAMEBUFFER, b.f); gl.viewport(0, 0, b.w, b.h);
+      gl.bindTexture(gl.TEXTURE_2D, src.t); gl.uniform2f(P.down.u.uTexel, 1 / src.w, 1 / src.h); gl.uniform1i(P.down.u.uPre, i ? 0 : 1);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
+    fullscreen(P.up); gl.uniform1i(P.up.u.uSrc, 0); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
+    for (let i = R.bloom.length - 2; i >= 0; i--) {
+      const b = R.bloom[i], src = R.bloom[i + 1];
+      gl.bindFramebuffer(gl.FRAMEBUFFER, b.f); gl.viewport(0, 0, b.w, b.h);
+      gl.bindTexture(gl.TEXTURE_2D, src.t); gl.uniform2f(P.up.u.uTexel, 1 / src.w, 1 / src.h);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
+    gl.disable(gl.BLEND);
+  }
+  /* 6. composition finale : ACES, vignettage, tramage */
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, W, H);
+  fullscreen(P.comp);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, R.accTex); gl.uniform1i(P.comp.u.uSrc, 0);
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, HDR && R.bloom.length ? R.bloom[0].t : R.accTex); gl.uniform1i(P.comp.u.uBloom, 1);
+  gl.uniform1f(P.comp.u.uExpo, EXPO); gl.uniform1f(P.comp.u.uBloomK, 0.07); gl.uniform1f(P.comp.u.uFrame, frameNo);
+  gl.uniform1i(P.comp.u.uLDR, HDR ? 0 : 1); gl.uniform1f(P.comp.u.uAsp, W / H);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  gl.activeTexture(gl.TEXTURE0);
+}
+
+/* =====================================================================
+   Boucle, résolution dynamique, progression
+   ===================================================================== */
+const prog = $('#prog');
+let lastKey = '', last = performance.now(), raf = 0, ema = 16, scaleCool = 0, firstFrame = true;
+function resizeIfNeeded() {
+  const dpr = Math.min(window.devicePixelRatio || 1, Q.dprCap) * renderScale;
+  const w = Math.max(16, Math.round(canvas.clientWidth * dpr)), h = Math.max(16, Math.round(canvas.clientHeight * dpr));
+  if (w !== rt.w || h !== rt.h) { canvas.width = w; canvas.height = h; rt.w = w; rt.h = h; allocTargets(w, h); acc = 0; }
+}
+function tick(now) {
+  raf = requestAnimationFrame(tick);
+  const dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000)); last = now;
+  if (lost || !gl) return;
+  updateCamera(dt);
+  const still = stillness();
+  const key = [cur.t[0], cur.t[1], cur.t[2], cur.yaw, cur.pitch, cur.dist, cur.fov].map(v => v.toFixed(5)).join();
+  if (!still || key !== lastKey) acc = 0;
+  lastKey = key;
+  resizeIfNeeded();
+  if (acc >= Q.accum) { prog.style.opacity = 0; return; }
+  const t0 = performance.now();
+  renderFrame();
+  frameNo++; acc++;
+  if (firstFrame) { firstFrame = false; const ch = $('#chargement'); ch.style.opacity = 0; setTimeout(() => ch.remove(), 800); showHelp(); }
+  if (still && acc > 1) { prog.style.opacity = acc < Q.accum ? 1 : 0; prog.style.width = (acc / Q.accum * 100).toFixed(1) + '%'; }
+  else prog.style.opacity = 0;
+  /* résolution dynamique : seulement pendant le mouvement */
+  if (!still) {
+    ema = ema * 0.9 + dt * 1000 * 0.1; scaleCool -= dt;
+    if (scaleCool <= 0) {
+      if (ema > (MOBILE ? 40 : 34) && renderScale > Q.minScale) { renderScale = Math.max(Q.minScale, renderScale - 0.1); scaleCool = 1.2; ema = 20; }
+      else if (ema < 20 && renderScale < Q.maxScale) { renderScale = Math.min(Q.maxScale, renderScale + 0.05); scaleCool = 2.5; }
+    }
+  }
+  void t0;
+}
+
+/* =====================================================================
+   Interactions
+   ===================================================================== */
+const pts = new Map();
+let dragging = false, mode = null, pinch0 = null, lastMove = 0, tap = { t: 0, x: 0, y: 0 };
+const rotK = () => 3.6 / Math.max(500, canvas.clientWidth);
+function panBy(dx, dy) {
+  const s = 2 * goal.dist * Math.tan(goal.fov * Math.PI / 360) / Math.max(1, canvas.clientHeight);
+  const cy = Math.cos(goal.yaw), sy = Math.sin(goal.yaw), cp = Math.cos(goal.pitch), sp = Math.sin(goal.pitch);
+  const right = [cy, 0, -sy], up = [-sp * sy, cp, -sp * cy];
+  for (let i = 0; i < 3; i++) goal.t[i] += -right[i] * dx * s + up[i] * dy * s;
+}
+function rayFrom(cx, cy) {
+  const r = canvas.getBoundingClientRect(), x = (cx - r.left) / r.width * 2 - 1, y = 1 - (cy - r.top) / r.height * 2;
+  const cam = camMatrices(cur, null), inv = m4inv(cam.vp);
+  const un = (z) => { const v = [x, y, z, 1], o = [0, 0, 0, 0]; for (let i = 0; i < 4; i++) o[i] = inv[i] * v[0] + inv[4 + i] * v[1] + inv[8 + i] * v[2] + inv[12 + i] * v[3]; return [o[0] / o[3], o[1] / o[3], o[2] / o[3]]; };
+  const a = un(-1), b = un(1); return { o: a, d: norm(sub(b, a)) };
+}
+function approach(cx, cy) {
+  const { o, d } = rayFrom(cx, cy), lo = [-1.5, 0, -0.625], hi = [1.5, 1.85, 0.625];
+  let tn = -1e9, tx = 1e9, ax = -1;
+  for (let k = 0; k < 3; k++) {
+    if (Math.abs(d[k]) < 1e-9) { if (o[k] < lo[k] || o[k] > hi[k]) { tn = 1e9; } continue; }
+    let a = (lo[k] - o[k]) / d[k], b = (hi[k] - o[k]) / d[k]; if (a > b) [a, b] = [b, a];
+    if (a > tn) { tn = a; ax = k; } tx = Math.min(tx, b);
+  }
+  userTook();
+  const to = cloneS(goal);
+  if (tn <= tx && tn > 0) {
+    const h = add(o, scl(d, tn));
+    let nrm = [0, 0, 0]; nrm[ax] = Math.sign(-d[ax]);
+    if (ax === 1) { if (Math.abs(h[0]) / 1.5 > Math.abs(h[2]) / 0.625) nrm = [Math.sign(h[0]), 0, 0]; else nrm = [0, 0, Math.sign(h[2])]; }
+    to.t = [clamp(h[0], -1.45, 1.45), clamp(h[1], 0.32, 1.52), clamp(h[2], -0.62, 0.62)];
+    if (nrm[2]) { to.t[2] = 0.6 * nrm[2]; to.yaw = nrm[2] > 0 ? 0 : Math.PI; }
+    else { to.t[0] = 1.5 * nrm[0]; to.yaw = nrm[0] > 0 ? Math.PI / 2 : -Math.PI / 2; }
+    to.pitch = 0.06; to.dist = portrait ? 1.4 : 1.05; to.fov = portrait ? 62 : 42;
+  } else if (d[1] < -1e-3) {
+    const t = -o[1] / d[1], h = add(o, scl(d, t));
+    to.t = [clamp(h[0], -5, 5), 0.9, clamp(h[2], -4.5, 4.5)]; to.dist = Math.min(goal.dist, 3); to.pitch = 0.15;
+  } else return;
+  to.yaw = goal.yaw + wrapPi(to.yaw - goal.yaw);
+  trans = { from: cloneS(goal), to, t: 0, dur: reduced ? 0 : 1.0 };
+}
+canvas.addEventListener('pointerdown', e => {
+  canvas.focus({ preventScroll: true });
+  try { canvas.setPointerCapture(e.pointerId); } catch (_) { }
+  pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  userTook(); vel.yaw = vel.pitch = 0; dragging = true; canvas.classList.add('drag');
+  if (e.pointerType === 'mouse') mode = (e.button === 2 || e.shiftKey) ? 'pan' : (e.button === 0 ? 'rot' : (e.button === 1 ? 'pan' : null));
+  else {
+    if (pts.size === 1) {
+      mode = 'rot'; const now = performance.now();
+      if (now - tap.t < 320 && Math.hypot(e.clientX - tap.x, e.clientY - tap.y) < 30) { approach(e.clientX, e.clientY); tap.t = 0; }
+      else tap = { t: now, x: e.clientX, y: e.clientY };
+    } else if (pts.size === 2) {
+      mode = 'pinch'; const [a, b] = [...pts.values()];
+      pinch0 = { d: Math.hypot(a.x - b.x, a.y - b.y), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+    }
+  }
+  e.preventDefault();
+});
+canvas.addEventListener('pointermove', e => {
+  if (!pts.has(e.pointerId)) return;
+  const p = pts.get(e.pointerId), dx = e.clientX - p.x, dy = e.clientY - p.y;
+  const now = performance.now(), dtm = Math.max(8, now - lastMove) / 1000; lastMove = now;
+  p.x = e.clientX; p.y = e.clientY;
+  if (mode === 'rot' && pts.size === 1) {
+    const k = rotK(); goal.yaw -= dx * k; goal.pitch += dy * k;
+    if (!reduced) { vel.yaw = lerp(vel.yaw, -dx * k / dtm, 0.5); vel.pitch = lerp(vel.pitch, dy * k / dtm, 0.5); }
+  } else if (mode === 'pan') panBy(dx, dy);
+  else if (mode === 'pinch' && pts.size >= 2) {
+    const [a, b] = [...pts.values()], d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    if (pinch0 && d > 10) { goal.dist *= pinch0.d / d; panBy(mx - pinch0.mx, my - pinch0.my); }
+    pinch0 = { d, mx, my };
+  }
+  e.preventDefault();
+});
+const endPtr = e => {
+  if (!pts.has(e.pointerId)) return;
+  pts.delete(e.pointerId);
+  if (performance.now() - lastMove > 90) vel.yaw = vel.pitch = 0;
+  if (pts.size === 0) { dragging = false; mode = null; pinch0 = null; canvas.classList.remove('drag'); }
+  else if (pts.size === 1) { mode = 'rot'; pinch0 = null; vel.yaw = vel.pitch = 0; }
+};
+canvas.addEventListener('pointerup', endPtr); canvas.addEventListener('pointercancel', endPtr); canvas.addEventListener('lostpointercapture', endPtr);
+canvas.addEventListener('wheel', e => {
+  e.preventDefault(); userTook();
+  const dy = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaMode === 2 ? e.deltaY * 400 : e.deltaY;
+  goal.dist *= Math.exp(clamp(dy, -200, 200) * 0.0013);
+}, { passive: false });
+canvas.addEventListener('dblclick', e => { e.preventDefault(); approach(e.clientX, e.clientY); });
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+window.addEventListener('keydown', e => {
+  if (e.target && e.target.tagName === 'BUTTON' && (e.key === 'Enter' || e.key === ' ')) return;
+  let used = true;
+  switch (e.key) {
+    case 'ArrowLeft': goal.yaw += 0.12; break;
+    case 'ArrowRight': goal.yaw -= 0.12; break;
+    case 'ArrowUp': goal.pitch += 0.06; break;
+    case 'ArrowDown': goal.pitch -= 0.06; break;
+    case '+': case '=': goal.dist *= 0.88; break;
+    case '-': case '_': goal.dist *= 1.14; break;
+    default: used = false;
+  }
+  if (used) { e.preventDefault(); trans = null; auto = false; document.querySelectorAll('#barre button').forEach(b => b.classList.remove('on')); hideHelp(); }
+});
+document.addEventListener('gesturestart', e => e.preventDefault());
+document.addEventListener('gesturechange', e => e.preventDefault());
+document.addEventListener('touchmove', e => { if (!e.target.closest || !e.target.closest('#barre')) e.preventDefault(); }, { passive: false });
+document.addEventListener('dblclick', e => e.preventDefault());
+
+document.querySelectorAll('#barre button').forEach(b => b.addEventListener('click', () => {
+  if (b.dataset.v === 'tour' && auto) { auto = false; b.classList.remove('on'); return; }
+  setView(b.dataset.v); hideHelp();
+}));
+window.addEventListener('resize', () => {
+  const p = innerHeight > innerWidth * 1.05;
+  if (p !== portrait) { portrait = p; setView(lastView, 0.8); }
+});
+
+/* Aide au démarrage */
+const aide = $('#aide');
+aide.innerHTML = MOBILE
+  ? '<b>1 doigt</b> tourner · <b>pincer</b> zoomer<br><b>2 doigts</b> déplacer · <b>double appui</b> s’approcher'
+  : '<b>Glisser</b> tourner · <b>clic droit</b> ou <b>Maj + glisser</b> déplacer<br><b>Molette</b> zoomer · <b>double-clic</b> sur un rayon pour s’approcher · <b>flèches</b>, <b>+</b> / <b>−</b>';
+let helpTimer = 0, helpShown = false;
+function showHelp() { helpShown = true; aide.classList.add('vis'); helpTimer = setTimeout(hideHelp, reduced ? 9000 : 6500); }
+function hideHelp() { if (!helpShown) return; clearTimeout(helpTimer); aide.classList.remove('vis'); }
+
+/* =====================================================================
+   Démarrage, perte de contexte
+   ===================================================================== */
+function message(t, b) { $('#msgT').textContent = t; $('#msgB').innerHTML = b; $('#message').style.display = 'flex'; }
+function hideMessage() { $('#message').style.display = 'none'; }
+canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); lost = true; message('Affichage interrompu', 'Le contexte graphique a été perdu (mémoire ou mise en veille). Restauration en cours…'); });
+canvas.addEventListener('webglcontextrestored', () => {
+  try { initGL(); lost = false; acc = 0; hideMessage(); }
+  catch (err) { message('Affichage impossible', 'La restauration du rendu 3D a échoué. Rechargez la page.'); }
+});
+
+async function start() {
+  gl = canvas.getContext('webgl2', { antialias: false, alpha: false, depth: true, stencil: false, premultipliedAlpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: false });
+  if (!gl) {
+    $('#chargement').remove();
+    message('WebGL 2 n’est pas disponible', 'Votre navigateur ou votre appareil ne permet pas d’afficher cette scène 3D.<br>Essayez une version récente de Chrome, Edge, Firefox ou Safari, et vérifiez que l’accélération matérielle est activée.');
+    return;
+  }
+  try {
+    await Promise.race([
+      Promise.all([document.fonts.load(`600 40px "Bodoni Moda"`), document.fonts.load(`400 20px Jost`), document.fonts.load(`500 20px Jost`), document.fonts.load(`300 20px Jost`), document.fonts.load(`600 20px Jost`)]),
+      new Promise(r => setTimeout(r, 2500))
+    ]);
+  } catch (_) { }
+  $('#chTxt').textContent = 'Mise en rayon…';
+  await new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+  try {
+    TEXCV = drawTextures();
+    SCENE = buildScene();
+    initGL();
+  } catch (err) {
+    console.error(err);
+    $('#chargement').remove();
+    message('Affichage impossible', 'Une erreur est survenue pendant la préparation du rendu 3D.<br><small>' + String(err.message || err).slice(0, 300) + '</small>');
+    return;
+  }
+  window.__scene = { tris: (SCENE.S.n + SCENE.F.n + SCENE.G.n) / 3, hdr: HDR, samples: SAMPLES };
+  setView('tq', reduced ? 0 : 1.8);
+  last = performance.now();
+  raf = requestAnimationFrame(tick);
+}
+start();
+})();
+</script>
+</body>
+</html>
